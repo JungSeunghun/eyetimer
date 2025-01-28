@@ -58,9 +58,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
       ..sort((a, b) => b.compareTo(a)); // 최신순으로 정렬
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: '갤러리',
-      ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : groupedPhotos.isEmpty

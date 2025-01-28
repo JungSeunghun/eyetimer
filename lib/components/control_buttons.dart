@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 
 class ControlButtons extends StatelessWidget {
   final bool isRunning;
-  final VoidCallback onPlayPause;
-  final VoidCallback onStop;
-  final VoidCallback onTakePhoto;
+  final bool isPaused;
+  final VoidCallback onPlay; // 시작
+  final VoidCallback onPause; // 일시 정지
+  final VoidCallback onStop; // 중지
+  final VoidCallback onTakePhoto; // 사진 찍기
   final Color primaryColor;
   final Color textColor;
   final double buttonIconSize;
 
   const ControlButtons({
     required this.isRunning,
-    required this.onPlayPause,
+    required this.isPaused,
+    required this.onPlay,
+    required this.onPause,
     required this.onStop,
     required this.onTakePhoto,
     required this.primaryColor,
@@ -22,26 +26,30 @@ class ControlButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Transform.translate(
-      offset: Offset(0, -25),
+      offset: const Offset(0, -25),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
             icon: Icon(
-              isRunning ? Icons.pause_outlined : Icons.play_arrow_outlined,
+              isRunning
+                  ? (isPaused ? Icons.play_arrow_outlined : Icons.pause_outlined)
+                  : Icons.play_arrow_outlined,
               size: buttonIconSize,
             ),
-            onPressed: onPlayPause,
+            onPressed: isRunning
+                ? (isPaused ? onPlay : onPause)
+                : onPlay, // 시작, 일시 정지, 재개 동작 설정
             color: primaryColor,
           ),
           IconButton(
             icon: Icon(Icons.stop_outlined, size: buttonIconSize),
-            onPressed: onStop,
+            onPressed: onStop, // 중지
             color: Colors.deepOrange.shade300,
           ),
           IconButton(
             icon: Icon(Icons.camera_outlined, size: buttonIconSize - 8),
-            onPressed: onTakePhoto,
+            onPressed: onTakePhoto, // 사진 찍기
             color: textColor,
           ),
         ],

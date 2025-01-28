@@ -27,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final String noPhotosMessage = '눈이 행복해지는 순간을 담아보세요.\n작은 풍경도 큰 위로가 될 수 있어요.';
   final String beforeStartText =
       '20-20-20 법칙은 20분 집중 후\n20초 동안 먼 곳을 바라보며\n눈의 피로를 줄이는 방법이에요.';
+
+  static const String focusTitle = '집중 시간';
+  static const String breakTitle = '쉬는 시간';
+
   final double sliderSizeFactor = 0.9;
   final double buttonIconSize = 72.0;
 
@@ -34,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Duration breakDuration = Duration(minutes: 5);
   Duration currentDuration = Duration(minutes: 20);
   bool isRunning = false;
+  bool isPaused = false;
   bool isFocusMode = true;
   Timer? timer;
 
@@ -79,18 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     _notificationsPlugin.initialize(initializationSettings);
-  }
-
-  Future<void> _showNotification(String title, String body) async {
-    const androidDetails = AndroidNotificationDetails(
-      'timer_channel',
-      'Timer Notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    const notificationDetails = NotificationDetails(android: androidDetails);
-
-    await _notificationsPlugin.show(0, title, body, notificationDetails);
   }
 
   Future<void> _loadTodayPhotos() async {
@@ -140,18 +133,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void startTimer() {
-    if (isRunning) return;
+    if (isRunning && !isPaused) return;
 
     setState(() {
       isRunning = true;
-      currentDuration = focusDuration; // 타이머 초기화
-      isFocusMode = true; // 집중 모드로 시작
+      isPaused = false;
     });
 
-    // 시작 알림
+    // 타이머 시작 알림 (소리 있음)
     _showNotification(
-      '집중 시간 시작',
-      '다시 집중하세요! 남은 시간: ${currentDuration.inMinutes}분',
+      title: focusTitle,
+      body: _getNotificationMessage(isFocusMode, currentDuration),
+      silent: false, // 소리 있음
     );
 
     // 타이머 시작
@@ -159,28 +152,50 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         if (currentDuration > const Duration(seconds: 0)) {
           currentDuration -= const Duration(seconds: 1);
+
+          // 타이머 진행 중 알림 업데이트 (무음)
+          _showNotification(
+            title: isFocusMode ? focusTitle : breakTitle,
+            body: _getNotificationMessage(isFocusMode, currentDuration),
+            silent: true, // 무음 알림
+          );
         } else {
           // 모드 전환
           isFocusMode = !isFocusMode;
           currentDuration = isFocusMode ? focusDuration : breakDuration;
 
-          // 모드 전환 시 알림
+          // 모드 전환 알림 (소리 있음)
           _showNotification(
-            isFocusMode ? '집중 시간 시작' : '쉬는 시간 시작',
-            isFocusMode
-                ? '다시 집중하세요! 남은 시간: ${currentDuration.inMinutes}분'
-                : '눈을 쉬게 하세요! 남은 시간: ${currentDuration.inMinutes}분',
+            title: isFocusMode ? focusTitle : breakTitle,
+            body: _getNotificationMessage(isFocusMode, currentDuration),
+            silent: false, // 소리 있음
           );
         }
       });
     });
   }
 
+  // 알림 메시지 생성 함수
+  String _getNotificationMessage(bool isFocusMode, Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+
+    if (isFocusMode) {
+      return seconds > 0
+          ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
+          : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.';
+    } else {
+      return seconds > 0
+          ? '$minutes분 $seconds초 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.'
+          : '$minutes분 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.';
+    }
+  }
+
   void pauseTimer() {
     if (!isRunning) return;
 
     setState(() {
-      isRunning = false;
+      isPaused = true;
     });
 
     timer?.cancel();
@@ -189,11 +204,49 @@ class _HomeScreenState extends State<HomeScreen> {
   void stopTimer() {
     setState(() {
       isRunning = false;
-      currentDuration = isFocusMode ? focusDuration : breakDuration; // 현재 모드의 기본 시간으로 초기화
+      isPaused = false;
+      isFocusMode = true;
+      currentDuration = focusDuration; // 초기화
     });
 
-    timer?.cancel(); // 타이머 취소
-    _notificationsPlugin.cancelAll(); // 모든 알림 취소
+    timer?.cancel();
+    _notificationsPlugin.cancelAll();
+  }
+
+  Future<void> _showNotification({
+    required String title,
+    required String body,
+    bool silent = false, // 기본값은 무음 알림
+  }) async {
+    final androidDetails = AndroidNotificationDetails(
+      'timer_channel',
+      'Timer Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+      ongoing: true, // 알림 고정
+      showWhen: false, // 시간 표시 제거
+      silent: silent, // 소리 설정
+    );
+
+    // iOS 알림 설정
+    final iOSDetails = DarwinNotificationDetails(
+      presentAlert: true, // 알림 표시
+      presentBadge: true, // 배지 업데이트
+      presentSound: !silent, // 소리 설정
+    );
+
+    // 공통 알림 설정
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iOSDetails,
+    );
+    
+    await _notificationsPlugin.show(
+      0, // 알림 ID 고정
+      title,
+      body,
+      notificationDetails,
+    );
   }
 
   @override
@@ -203,9 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final primaryColor = theme.primaryColor;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Eye Timer',
-      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -238,10 +288,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   ControlButtons(
                     isRunning: isRunning,
-                    onPlayPause: isRunning ? pauseTimer : startTimer,
+                    isPaused: isPaused,
+                    onPlay: startTimer,
+                    onPause: pauseTimer,
                     onStop: stopTimer,
                     onTakePhoto: takePhoto,
-                    primaryColor: primaryColor,
+                    primaryColor: theme.primaryColor,
                     textColor: textColor,
                     buttonIconSize: buttonIconSize,
                   ),

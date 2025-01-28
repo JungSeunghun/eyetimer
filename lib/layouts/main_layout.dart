@@ -1,3 +1,4 @@
+import 'package:eyetimer/components/custom_app_bar.dart';
 import 'package:eyetimer/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import '../components/custom_bottom_navigation_bar.dart';
@@ -29,6 +30,7 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: CustomAppBar(),
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
