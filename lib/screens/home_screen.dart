@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../components/control_buttons.dart';
@@ -43,16 +44,53 @@ class _HomeScreenState extends State<HomeScreen> {
       viewportFraction: 1.0
   );
 
+  late FlutterLocalNotificationsPlugin _notificationsPlugin;
+
   @override
   void initState() {
     super.initState();
     _loadTodayPhotos();
+    _initializeNotifications(); // 알림 초기화
   }
 
   @override
   void dispose() {
     timer?.cancel();
     super.dispose();
+  }
+
+  void _initializeNotifications() {
+    _notificationsPlugin = FlutterLocalNotificationsPlugin();
+
+    // iOS 및 macOS 초기화 설정
+    const darwinInitialization = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    // Android 초기화 설정
+    const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    // 전체 초기화 설정
+    const initializationSettings = InitializationSettings(
+      android: androidInitialization,
+      iOS: darwinInitialization, // DarwinInitializationSettings 사용
+    );
+
+    _notificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _showNotification(String title, String body) async {
+    const androidDetails = AndroidNotificationDetails(
+      'timer_channel',
+      'Timer Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const notificationDetails = NotificationDetails(android: androidDetails);
+
+    await _notificationsPlugin.show(0, title, body, notificationDetails);
   }
 
   Future<void> _loadTodayPhotos() async {
@@ -100,24 +138,39 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Error saving photo: $e");
     }
   }
+
   void startTimer() {
     if (isRunning) return;
 
     setState(() {
       isRunning = true;
+      currentDuration = focusDuration; // 타이머 초기화
+      isFocusMode = true; // 집중 모드로 시작
     });
 
-    timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    // 시작 알림
+    _showNotification(
+      '집중 시간 시작',
+      '다시 집중하세요! 남은 시간: ${currentDuration.inMinutes}분',
+    );
+
+    // 타이머 시작
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
-        if (currentDuration > Duration.zero) {
-          currentDuration -= Duration(seconds: 1);
+        if (currentDuration > const Duration(seconds: 0)) {
+          currentDuration -= const Duration(seconds: 1);
         } else {
-          if (isFocusMode) {
-            currentDuration = breakDuration;
-          } else {
-            currentDuration = focusDuration;
-          }
+          // 모드 전환
           isFocusMode = !isFocusMode;
+          currentDuration = isFocusMode ? focusDuration : breakDuration;
+
+          // 모드 전환 시 알림
+          _showNotification(
+            isFocusMode ? '집중 시간 시작' : '쉬는 시간 시작',
+            isFocusMode
+                ? '다시 집중하세요! 남은 시간: ${currentDuration.inMinutes}분'
+                : '눈을 쉬게 하세요! 남은 시간: ${currentDuration.inMinutes}분',
+          );
         }
       });
     });
@@ -136,10 +189,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void stopTimer() {
     setState(() {
       isRunning = false;
-      currentDuration = isFocusMode ? focusDuration : breakDuration;
+      currentDuration = isFocusMode ? focusDuration : breakDuration; // 현재 모드의 기본 시간으로 초기화
     });
 
-    timer?.cancel();
+    timer?.cancel(); // 타이머 취소
+    _notificationsPlugin.cancelAll(); // 모든 알림 취소
   }
 
   @override
