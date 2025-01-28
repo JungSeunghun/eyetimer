@@ -141,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // 타이머 시작 알림 (소리 있음)
     _showNotification(
       title: focusTitle,
-      body: _getNotificationMessage(isFocusMode, currentDuration),
+      body: _getNotificationMessage(currentDuration),
       silent: false, // 소리 있음
     );
 
@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 타이머 진행 중 알림 업데이트 (무음)
           _showNotification(
             title: isFocusMode ? focusTitle : breakTitle,
-            body: _getNotificationMessage(isFocusMode, currentDuration),
+            body: _getNotificationMessage(currentDuration),
             silent: true, // 무음 알림
           );
         } else {
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 모드 전환 알림 (소리 있음)
           _showNotification(
             title: isFocusMode ? focusTitle : breakTitle,
-            body: _getNotificationMessage(isFocusMode, currentDuration),
+            body: _getNotificationMessage(currentDuration),
             silent: false, // 소리 있음
           );
         }
@@ -174,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // 알림 메시지 생성 함수
-  String _getNotificationMessage(bool isFocusMode, Duration duration) {
+  String _getNotificationMessage(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
 
@@ -195,6 +195,12 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       isPaused = true;
     });
+
+    _showNotification(
+      title: focusTitle,
+      body: '지금은 일시정지 상태에요.',
+      silent: false, // 소리 있음
+    );
 
     timer?.cancel();
   }
@@ -274,7 +280,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   _loadTodayPhotos();
                 },
               ),
-
               Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,

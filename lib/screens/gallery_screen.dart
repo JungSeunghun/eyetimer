@@ -30,7 +30,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Future<void> _loadAllPhotos() async {
     final photos = await _photoService.getAllPhotos();
 
-    // 사진을 날짜별로 그룹화
+    // 사진을 날짜별로 그룹화 및 정렬
     final Map<String, List<Photo>> grouped = {};
     for (final photo in photos) {
       final date = DateFormat('yyyy-MM-dd').format(DateTime.parse(photo.timestamp));
@@ -40,10 +40,75 @@ class _GalleryScreenState extends State<GalleryScreen> {
       grouped[date]?.add(photo);
     }
 
+    // 각 날짜 그룹 내의 사진을 최신순으로 정렬
+    grouped.forEach((key, value) {
+      value.sort((a, b) => DateTime.parse(b.timestamp).compareTo(DateTime.parse(a.timestamp)));
+    });
+
     // 상태 업데이트
     setState(() {
       groupedPhotos = grouped;
     });
+  }
+
+  String formatTimestamp(String timestamp) {
+    final dateTime = DateTime.parse(timestamp);
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime); // 날짜와 시간 형식 지정
+  }
+
+  Widget _buildPhoto(Photo photo) {
+    return Stack(
+      children: [
+        // 이미지
+        Image(
+          image: ResizeImage(
+            FileImage(File(photo.filePath)),
+            width: 300,
+            height: 300,
+          ),
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.low,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded) return child;
+            return AnimatedOpacity(
+              child: child,
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(seconds: 1),
+              curve: Curves.easeOut,
+            );
+          },
+        ),
+        // 날짜와 시간 표시
+        Positioned(
+          left: 8,
+          bottom: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              formatTimestamp(photo.timestamp),
+              style: const TextStyle(fontSize: 12, color: Colors.white),
+            ),
+          ),
+        ),
+        // 메모 표시 (있을 경우)
+        if (photo.memo != null && photo.memo!.isNotEmpty)
+          Center(
+            child: Container(
+              color: Colors.black.withOpacity(0.5),
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                photo.memo!,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
@@ -88,10 +153,10 @@ class _GalleryScreenState extends State<GalleryScreen> {
               // 사진 그리드
               GridView.builder(
                 shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
+                physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, // 사진을 3열로 표시
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // 사진을 3열로 표시
                   crossAxisSpacing: 8.0,
                   mainAxisSpacing: 8.0,
                 ),
@@ -118,24 +183,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                         _loadAllPhotos();
                       }
                     },
-                    child: Image(
-                      image: ResizeImage(
-                        FileImage(File(photo.filePath)),
-                        width: 300,
-                        height: 300,
-                      ),
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.low,
-                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-                        if (wasSynchronouslyLoaded) return child;
-                        return AnimatedOpacity(
-                          child: child,
-                          opacity: frame == null ? 0 : 1,
-                          duration: const Duration(seconds: 1),
-                          curve: Curves.easeOut,
-                        );
-                      },
-                    ),
+                    child: _buildPhoto(photo), // 사진과 타임스탬프 위젯 사용
                   );
                 },
               ),
@@ -143,6 +191,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
           );
         },
       ),
-     );
+    );
   }
 }
