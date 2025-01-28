@@ -5,8 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import '../components/control_buttons.dart';
-import '../components/custom_app_bar.dart';
-import '../components/custom_bottom_navigation_bar.dart';
 import '../components/memo_input_dialog.dart';
 import '../components/photo_slider.dart';
 import '../components/status_text.dart';
@@ -75,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     // Android 초기화 설정
-    const androidInitialization = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidInitialization = AndroidInitializationSettings('@mipmap/launcher_icon');
 
     // 전체 초기화 설정
     const initializationSettings = InitializationSettings(
@@ -240,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
       android: androidDetails,
       iOS: iOSDetails,
     );
-    
+
     await _notificationsPlugin.show(
       0, // 알림 ID 고정
       title,
@@ -253,7 +251,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final primaryColor = theme.primaryColor;
 
     return Scaffold(
       body: SingleChildScrollView(

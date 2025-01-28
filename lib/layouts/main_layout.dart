@@ -1,9 +1,9 @@
-import 'package:eyetimer/components/custom_app_bar.dart';
-import 'package:eyetimer/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
+import '../components/custom_app_bar.dart';
 import '../components/custom_bottom_navigation_bar.dart';
 import '../screens/gallery_screen.dart';
 import '../screens/home_screen.dart';
+import '../screens/settings_screen.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});

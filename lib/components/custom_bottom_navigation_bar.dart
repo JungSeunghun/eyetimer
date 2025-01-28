@@ -15,7 +15,6 @@ class CustomBottomNavigationBar extends StatelessWidget {
     final theme = Theme.of(context);
     final backgroundColor = theme.scaffoldBackgroundColor;
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final primaryColor = theme.primaryColor;
 
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,

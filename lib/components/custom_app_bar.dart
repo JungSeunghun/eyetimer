@@ -12,7 +12,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final darkModeNotifier = Provider.of<DarkModeNotifier>(context);
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final primaryColor = theme.primaryColor;
 
     return AppBar(
       title: AnimatedSwitcher(
@@ -35,7 +34,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             const SizedBox(width: 8), // 로고와 텍스트 간 간격
             Text(
-              'Eye Timer',
+              'EyeTimer',
               style: TextStyle(
                 fontSize: 18, // 텍스트 크기
                 fontWeight: FontWeight.w600, // 텍스트 굵기

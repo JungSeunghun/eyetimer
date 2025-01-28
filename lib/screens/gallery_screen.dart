@@ -4,8 +4,6 @@ import 'package:intl/intl.dart';
 import '../components/memo_input_dialog.dart';
 import '../models/photo.dart';
 import '../services/photo_service.dart';
-import '../components/custom_app_bar.dart';
-import '../components/custom_bottom_navigation_bar.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -52,7 +50,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final primaryColor = theme.primaryColor;
 
     final sortedDates = groupedPhotos.keys.toList()
       ..sort((a, b) => b.compareTo(a)); // 최신순으로 정렬

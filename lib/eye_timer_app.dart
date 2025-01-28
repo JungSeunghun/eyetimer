@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:eyetimer/layouts/main_layout.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'constants/colors.dart';
 import 'dark_mode_notifier.dart';
+import 'layouts/main_layout.dart';
 
 class EyeTimerApp extends StatefulWidget {
   @override
