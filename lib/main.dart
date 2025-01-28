@@ -1,118 +1,86 @@
+import 'package:eyetimer/layouts/main_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'constants/colors.dart';
+import 'dark_mode_notifier.dart';
 import 'screens/home_screen.dart';
 import 'screens/gallery_screen.dart';
 import 'screens/settings_screen.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // SharedPreferences 및 카메라 초기화
-  final prefs = await SharedPreferences.getInstance();
-  final isDarkMode = prefs.getBool('isDarkMode') ?? false;
+  WidgetsFlutterBinding.ensureInitialized();
+  final darkModeNotifier = DarkModeNotifier();
+  await darkModeNotifier.initialize();
 
-  runApp(EyeTimerApp(isDarkMode: isDarkMode));
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => darkModeNotifier,
+      child: EyeTimerApp(),
+    ),
+  );
 }
 
-class EyeTimerApp extends StatelessWidget {
-  final bool isDarkMode;
-
-  EyeTimerApp({required this.isDarkMode});
-
+class EyeTimerApp extends StatefulWidget { // StatefulWidget으로 변경
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: EyeTimerTheme(isDarkMode: isDarkMode),
-    );
-  }
+  _EyeTimerAppState createState() => _EyeTimerAppState();
 }
 
-class EyeTimerTheme extends StatefulWidget {
-  final bool isDarkMode;
-
-  EyeTimerTheme({required this.isDarkMode});
-
-  @override
-  _EyeTimerThemeState createState() => _EyeTimerThemeState();
-}
-
-class _EyeTimerThemeState extends State<EyeTimerTheme> {
-  late bool isDarkMode;
+class _EyeTimerAppState extends State<EyeTimerApp> {
+  late final GoRouter _router; // 라우터 인스턴스
 
   @override
   void initState() {
     super.initState();
-    isDarkMode = widget.isDarkMode;
+    _router = _buildRouter(); // 초기화 시 라우터 생성
   }
 
-  Future<void> _saveThemePreference(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', value);
+  ThemeData _buildTheme({required bool isDarkMode}) {
+    return ThemeData(
+      fontFamily: 'KoPubWorld',
+      primaryColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+      scaffoldBackgroundColor:
+      isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
+      appBarTheme: AppBarTheme(
+        backgroundColor:
+        isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
+        foregroundColor: isDarkMode ? AppColors.darkText : AppColors.lightText,
+      ),
+      textTheme: TextTheme(
+        bodyMedium: TextStyle(
+          color: isDarkMode ? AppColors.darkText : AppColors.lightText,
+        ),
+      ),
+    );
   }
 
-  void toggleTheme() {
-    setState(() {
-      isDarkMode = !isDarkMode;
-      _saveThemePreference(isDarkMode);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final router = GoRouter(
+  GoRouter _buildRouter() { // 컨텍스트 의존성 제거
+    return GoRouter(
       initialLocation: '/',
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => HomeScreen(
-            isDarkMode: isDarkMode,
-            onToggleTheme: toggleTheme,
-          ),
-        ),
-        GoRoute(
-          path: '/gallery',
-          builder: (context, state) => GalleryScreen(
-            isDarkMode: isDarkMode,
-            onToggleTheme: toggleTheme,
-          ),
-        ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => SettingsScreen(
-            isDarkMode: isDarkMode,
-            onToggleTheme: toggleTheme,
-          ),
+          builder: (context, state) => MainLayout(),
         ),
       ],
     );
+  }
 
-    return MaterialApp.router(
-      routerConfig: router,
-      theme: ThemeData(
-        fontFamily: 'KoPubWorld',
-        primaryColor: AppColors.lightPrimary,
-        scaffoldBackgroundColor: AppColors.lightBackground,
-        appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.lightBackground,
-          foregroundColor: AppColors.lightText,
-        ),
-        textTheme: TextTheme(
-          bodyMedium: TextStyle(color: AppColors.lightText),
-        ),
+  @override
+  Widget build(BuildContext context) {
+    final darkModeNotifier = Provider.of<DarkModeNotifier>(context);
+
+    return AnimatedTheme(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      data: _buildTheme(isDarkMode: darkModeNotifier.isDarkMode),
+      child: MaterialApp.router(
+        routerConfig: _router, // 동일한 라우터 인스턴스 사용
+        theme: _buildTheme(isDarkMode: false),
+        darkTheme: _buildTheme(isDarkMode: true),
+        themeMode: darkModeNotifier.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       ),
-      darkTheme: ThemeData(
-        fontFamily: 'KoPubWorld',
-        primaryColor: AppColors.darkPrimary,
-        scaffoldBackgroundColor: AppColors.darkBackground,
-        appBarTheme: AppBarTheme(
-          backgroundColor: AppColors.darkBackground,
-          foregroundColor: AppColors.darkText,
-        ),
-        textTheme: TextTheme(
-          bodyMedium: TextStyle(color: AppColors.darkText),
-        ),
-      ),
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
     );
   }
 }

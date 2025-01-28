@@ -8,10 +8,7 @@ import '../components/custom_app_bar.dart';
 import '../components/custom_bottom_navigation_bar.dart';
 
 class GalleryScreen extends StatefulWidget {
-  final bool isDarkMode;
-  final VoidCallback onToggleTheme;
-
-  GalleryScreen({required this.isDarkMode, required this.onToggleTheme});
+  const GalleryScreen({super.key});
 
   @override
   _GalleryScreenState createState() => _GalleryScreenState();
@@ -63,8 +60,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: '갤러리',
-        isDarkMode: widget.isDarkMode,
-        onToggleTheme: widget.onToggleTheme,
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
@@ -154,8 +149,6 @@ class _GalleryScreenState extends State<GalleryScreen> {
           );
         },
       ),
-      bottomNavigationBar:
-      CustomBottomNavigationBar(currentIndex: 1), // 갤러리 탭 인덱스
-    );
+     );
   }
 }

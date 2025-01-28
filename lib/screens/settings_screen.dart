@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 class SettingsScreen extends StatelessWidget {
-  final bool isDarkMode;
-  final VoidCallback onToggleTheme;
 
-  SettingsScreen({required this.isDarkMode, required this.onToggleTheme});
+  SettingsScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +15,6 @@ class SettingsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile(
-              title: Text('다크 모드'),
-              value: isDarkMode,
-              onChanged: (value) {
-                onToggleTheme();
-              },
-            ),
             SizedBox(height: 16),
             Text(
               '설정 항목 추가...',

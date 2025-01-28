@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import '../components/control_buttons.dart';
 import '../components/custom_app_bar.dart';
@@ -15,10 +14,7 @@ import '../models/photo.dart';
 import '../services/photo_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  final bool isDarkMode;
-  final VoidCallback onToggleTheme;
-
-  HomeScreen({required this.isDarkMode, required this.onToggleTheme});
+  const HomeScreen({super.key});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -155,8 +151,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Eye Timer',
-        isDarkMode: widget.isDarkMode,
-        onToggleTheme: widget.onToggleTheme,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -211,7 +205,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 0),
-    );
+     );
   }
 }

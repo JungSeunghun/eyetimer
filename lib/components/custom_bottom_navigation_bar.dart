@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
+  final ValueChanged<int> onTap;  // 콜백 추가
 
-  CustomBottomNavigationBar({required this.currentIndex});
+  const CustomBottomNavigationBar({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,19 +24,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
       currentIndex: currentIndex,
       selectedItemColor: textColor, // 선택된 아이템 색상
       unselectedItemColor: textColor.withValues(alpha: 0.5), // 선택되지 않은 아이템 색상
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/'); // 홈
-            break;
-          case 1:
-            context.go('/gallery'); // 갤러리
-            break;
-          case 2:
-            context.go('/settings'); // 설정
-            break;
-        }
-      },
+      onTap: onTap,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.timer_outlined),

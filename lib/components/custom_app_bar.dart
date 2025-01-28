@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../dark_mode_notifier.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
-  final bool isDarkMode;
-  final VoidCallback onToggleTheme;
 
-  CustomAppBar({
-    required this.title,
-    required this.isDarkMode,
-    required this.onToggleTheme,
-  });
+  CustomAppBar({required this.title});
 
   @override
   Size get preferredSize => Size.fromHeight(kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final darkModeNotifier = Provider.of<DarkModeNotifier>(context);
 
     return AppBar(
       title: Text(title),
       actions: [
-        IconButton(
-          icon: Icon(
-            isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-            color: textColor,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          transitionBuilder: (child, animation) {
+            return ScaleTransition(
+              scale: animation,
+              child: child,
+            );
+          },
+          child: IconButton(
+            key: ValueKey(darkModeNotifier.isDarkMode),
+            icon: Icon(
+              darkModeNotifier.isDarkMode
+                  ? Icons.dark_mode_outlined
+                  : Icons.light_mode_outlined,
+            ),
+            onPressed: () => darkModeNotifier.toggleDarkMode(),
           ),
-          onPressed: onToggleTheme,
-          tooltip: isDarkMode ? '라이트 모드로 변경' : '다크 모드로 변경',
         ),
       ],
     );
