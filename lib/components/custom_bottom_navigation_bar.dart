@@ -34,6 +34,10 @@ class CustomBottomNavigationBar extends StatelessWidget {
           label: '갤러리',
         ),
         BottomNavigationBarItem(
+          icon: Icon(Icons.remove_red_eye_outlined), // 운동 아이콘 추가
+          label: '운동',
+        ),
+        BottomNavigationBarItem(
           icon: Icon(Icons.settings_outlined),
           label: '설정',
         ),
