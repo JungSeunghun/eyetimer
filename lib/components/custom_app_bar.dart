@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import '../dark_mode_notifier.dart';
+import '../providers/dark_mode_notifier.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override

@@ -33,23 +33,23 @@ class ControlButtons extends StatelessWidget {
           IconButton(
             icon: Icon(
               isRunning
-                  ? (isPaused ? Icons.play_arrow_outlined : Icons.pause_outlined)
-                  : Icons.play_arrow_outlined,
+                  ? (isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded)
+                  : Icons.play_arrow_rounded,
               size: buttonIconSize,
             ),
             onPressed: isRunning
                 ? (isPaused ? onPlay : onPause)
                 : onPlay, // 시작, 일시 정지, 재개 동작 설정
+            color: textColor,
+          ),
+          IconButton(
+            icon: Icon(Icons.camera_rounded, size: buttonIconSize - 8),
+            onPressed: onTakePhoto, // 사진 찍기
             color: primaryColor,
           ),
           IconButton(
-            icon: Icon(Icons.stop_outlined, size: buttonIconSize),
+            icon: Icon(Icons.stop_rounded, size: buttonIconSize),
             onPressed: onStop, // 중지
-            color: Colors.deepOrange.shade300,
-          ),
-          IconButton(
-            icon: Icon(Icons.camera_outlined, size: buttonIconSize - 8),
-            onPressed: onTakePhoto, // 사진 찍기
             color: textColor,
           ),
         ],

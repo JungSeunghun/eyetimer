@@ -1,6 +1,7 @@
+import 'package:EyeTimer/providers/photo_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dark_mode_notifier.dart';
+import 'providers/dark_mode_notifier.dart';
 import 'eye_timer_app.dart';
 
 Future<void> main() async {
@@ -9,8 +10,11 @@ Future<void> main() async {
   await darkModeNotifier.initialize();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => darkModeNotifier,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => darkModeNotifier),
+        ChangeNotifierProvider(create: (_) => PhotoProvider()),
+      ],
       child: EyeTimerApp(),
     ),
   );

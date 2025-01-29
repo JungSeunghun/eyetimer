@@ -4,12 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../components/control_buttons.dart';
+import '../components/duration_picker_dialog.dart';
 import '../components/memo_input_dialog.dart';
 import '../components/photo_slider.dart';
 import '../components/status_text.dart';
 import '../components/timer_display.dart';
 import '../models/photo.dart';
+import '../providers/photo_provider.dart';
 import '../services/photo_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -32,6 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final double sliderSizeFactor = 0.9;
   final double buttonIconSize = 72.0;
 
+  static const String focusDurationMinutesKey = 'focusDuration_minutes';
+  static const String focusDurationSecondsKey = 'focusDuration_seconds';
+  static const String breakDurationMinutesKey = 'breakDuration_minutes';
+  static const String breakDurationSecondsKey = 'breakDuration_seconds';
+
   Duration focusDuration = Duration(minutes: 20);
   Duration breakDuration = Duration(minutes: 5);
   Duration currentDuration = Duration(minutes: 20);
@@ -52,8 +61,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadDurations();
     _loadTodayPhotos();
-    _initializeNotifications(); // 알림 초기화
+    _initializeNotifications();
   }
 
   @override
@@ -62,26 +72,34 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  void _initializeNotifications() {
-    _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  Future<void> _loadDurations() async {
+    final prefs = await SharedPreferences.getInstance();
 
-    // iOS 및 macOS 초기화 설정
-    const darwinInitialization = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    setState(() {
+      // 저장된 값을 불러오거나 기본값 설정
+      final focusMinutes = prefs.getInt(focusDurationMinutesKey) ?? 20;
+      final focusSeconds = prefs.getInt(focusDurationSecondsKey) ?? 0;
+      focusDuration = Duration(minutes: focusMinutes, seconds: focusSeconds);
 
-    // Android 초기화 설정
-    const androidInitialization = AndroidInitializationSettings('@mipmap/launcher_icon');
+      final breakMinutes = prefs.getInt(breakDurationMinutesKey) ?? 5;
+      final breakSeconds = prefs.getInt(breakDurationSecondsKey) ?? 0;
+      breakDuration = Duration(minutes: breakMinutes, seconds: breakSeconds);
 
-    // 전체 초기화 설정
-    const initializationSettings = InitializationSettings(
-      android: androidInitialization,
-      iOS: darwinInitialization, // DarwinInitializationSettings 사용
-    );
+      // 현재 모드에 따라 초기화
+      currentDuration = focusDuration;
+    });
+  }
 
-    _notificationsPlugin.initialize(initializationSettings);
+  Future<void> _saveDurations() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // focusDuration 저장
+    await prefs.setInt(focusDurationMinutesKey, focusDuration.inMinutes);
+    await prefs.setInt(focusDurationSecondsKey, focusDuration.inSeconds % 60);
+
+    // breakDuration 저장
+    await prefs.setInt(breakDurationMinutesKey, breakDuration.inMinutes);
+    await prefs.setInt(breakDurationSecondsKey, breakDuration.inSeconds % 60);
   }
 
   Future<void> _loadTodayPhotos() async {
@@ -122,12 +140,38 @@ class _HomeScreenState extends State<HomeScreen> {
             photoPath: photo.path,
         );
 
+        final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
+        final newPhoto = Photo(id: null, filePath: newPath, timestamp: timestamp, memo: memo);
+
         await _photoService.savePhoto(newPath, timestamp, memo);
-        _loadTodayPhotos();
+        photoProvider.addPhoto(newPhoto);
+        await photoProvider.loadAllPhotos();
       }
     } catch (e) {
       print("Error saving photo: $e");
     }
+  }
+
+  void _initializeNotifications() {
+    _notificationsPlugin = FlutterLocalNotificationsPlugin();
+
+    // iOS 및 macOS 초기화 설정
+    const darwinInitialization = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    // Android 초기화 설정
+    const androidInitialization = AndroidInitializationSettings('@mipmap/launcher_icon');
+
+    // 전체 초기화 설정
+    const initializationSettings = InitializationSettings(
+      android: androidInitialization,
+      iOS: darwinInitialization, // DarwinInitializationSettings 사용
+    );
+
+    _notificationsPlugin.initialize(initializationSettings);
   }
 
   void startTimer() {
@@ -138,42 +182,37 @@ class _HomeScreenState extends State<HomeScreen> {
       isPaused = false;
     });
 
-    // 타이머 시작 알림 (소리 있음)
     _showNotification(
       title: focusTitle,
       body: _getNotificationMessage(currentDuration),
-      silent: false, // 소리 있음
+      silent: false,
     );
 
-    // 타이머 시작
     timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
         if (currentDuration > const Duration(seconds: 0)) {
           currentDuration -= const Duration(seconds: 1);
 
-          // 타이머 진행 중 알림 업데이트 (무음)
           _showNotification(
             title: isFocusMode ? focusTitle : breakTitle,
             body: _getNotificationMessage(currentDuration),
-            silent: true, // 무음 알림
+            silent: true,
           );
         } else {
           // 모드 전환
           isFocusMode = !isFocusMode;
           currentDuration = isFocusMode ? focusDuration : breakDuration;
 
-          // 모드 전환 알림 (소리 있음)
           _showNotification(
             title: isFocusMode ? focusTitle : breakTitle,
             body: _getNotificationMessage(currentDuration),
-            silent: false, // 소리 있음
+            silent: false,
           );
         }
       });
     });
   }
 
-  // 알림 메시지 생성 함수
   String _getNotificationMessage(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
@@ -199,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _showNotification(
       title: focusTitle,
       body: '지금은 일시정지 상태에요.',
-      silent: false, // 소리 있음
+      silent: false,
     );
 
     timer?.cancel();
@@ -210,7 +249,8 @@ class _HomeScreenState extends State<HomeScreen> {
       isRunning = false;
       isPaused = false;
       isFocusMode = true;
-      currentDuration = focusDuration; // 초기화
+
+      currentDuration = focusDuration;
     });
 
     timer?.cancel();
@@ -220,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _showNotification({
     required String title,
     required String body,
-    bool silent = false, // 기본값은 무음 알림
+    bool silent = false,
   }) async {
     final androidDetails = AndroidNotificationDetails(
       'timer_channel',
@@ -253,10 +293,31 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showDurationPickerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => DurationPickerDialog(
+        focusDuration: focusDuration,
+        breakDuration: breakDuration,
+        onSave: (newFocusDuration, newBreakDuration) {
+          setState(() {
+            focusDuration = newFocusDuration;
+            breakDuration = newBreakDuration;
+            if (isFocusMode) {
+              currentDuration = focusDuration;
+            }
+          });
+          _saveDurations(); // 설정 값 저장
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final photoProvider = Provider.of<PhotoProvider>(context);
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -265,19 +326,18 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               PhotoSlider(
-                todayPhotos: todayPhotos,
+                todayPhotos: photoProvider.todayPhotos,
                 pageController: _pageController,
                 noPhotosMessage: noPhotosMessage,
                 textColor: textColor,
-                onEditMemo: (Photo photo, String updatedMemo) async {
+                onEditMemo: (Photo photo, String updatedMemo) {
                   // 메모 수정 로직
-                  await _photoService.updatePhotoMemo(photo.id!, updatedMemo);
-                  _loadTodayPhotos();
+                  photoProvider.updatePhotoMemo(photo.id!, updatedMemo);
+                  photoProvider.loadTodayPhotos();
                 },
-                onDeletePhoto: (Photo photo) async {
-                  // 사진 삭제 로직
-                  await _photoService.deletePhoto(photo.id!);
-                  _loadTodayPhotos();
+                onDeletePhoto: (Photo photo) {
+                  photoProvider.deletePhoto(photo.id!);
+                  photoProvider.loadTodayPhotos();
                 },
               ),
               Column(
@@ -287,6 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   TimerDisplay(
                     currentDuration: currentDuration,
                     textColor: textColor,
+                    onTap: () => _showDurationPickerDialog(context), // 터치 이벤트 추가
                   ),
                   ControlButtons(
                     isRunning: isRunning,
