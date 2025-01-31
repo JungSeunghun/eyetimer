@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-class SettingsScreen extends StatelessWidget {
+class ProfileScreen extends StatelessWidget {
 
-  SettingsScreen();
+  ProfileScreen();
 
   @override
   Widget build(BuildContext context) {

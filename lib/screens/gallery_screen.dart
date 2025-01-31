@@ -122,7 +122,7 @@ class GalleryScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -135,7 +135,7 @@ class GalleryScreen extends StatelessWidget {
         if (photo.memo != null && photo.memo!.isNotEmpty)
           Center(
             child: Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 photo.memo!,

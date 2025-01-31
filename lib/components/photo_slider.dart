@@ -131,17 +131,21 @@ class PhotoItem extends StatelessWidget {
   }
 
   Widget _buildMemoOverlay() {
-    return Center(
-      child: Container(
-        color: Colors.black.withOpacity(0.5),
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          photo.memo ?? '',
-          style: TextStyle(color: Colors.white, fontSize: 16),
-          textAlign: TextAlign.center,
+    if (photo.memo != null && photo.memo!.isNotEmpty) {
+      return Center(
+        child: Container(
+          color: Colors.black.withOpacity(0.5), // 오타 수정 (withValues → withOpacity)
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            photo.memo ?? '',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
         ),
-      ),
-    );
+      );
+    }
+
+    return const SizedBox.shrink(); // 빈 위젯 반환
   }
 
   Widget _buildTimestamp() {

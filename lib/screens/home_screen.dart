@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final String breakModeText = '잠깐 쉬면서 하늘을 올려다볼까요.';
   final String noPhotosMessage = '눈이 행복해지는 순간을 담아보세요.\n작은 풍경도 큰 위로가 될 수 있어요.';
   final String beforeStartText =
-      '20-20-20 법칙은 20분 집중 후\n20초 동안 먼 곳을 바라보며\n눈의 피로를 줄이는 방법이에요.';
+      '20분 집중 후 먼 곳을 바라보며 눈의 피로를 줄여보세요.';
 
   static const String focusTitle = '집중 시간';
   static const String breakTitle = '쉬는 시간';
@@ -347,7 +347,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   TimerDisplay(
                     currentDuration: currentDuration,
                     textColor: textColor,
-                    onTap: () => _showDurationPickerDialog(context), // 터치 이벤트 추가
                   ),
                   ControlButtons(
                     isRunning: isRunning,
@@ -367,6 +366,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     breakModeText: breakModeText,
                     beforeStartText: beforeStartText,
                     textColor: textColor,
+                  ),
+                  // 설정 버튼 추가
+                  Align(
+                    alignment: Alignment.center,
+                    child: IconButton(
+                      icon: Icon(Icons.settings, color: textColor),
+                      onPressed: () => _showDurationPickerDialog(context), // 설정 버튼 클릭 시 타이머 설정 창 열기
+                    ),
                   ),
                 ],
               ),

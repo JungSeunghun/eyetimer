@@ -7,41 +7,15 @@ class ExerciseScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('운동/게임 선택 화면'),
-        centerTitle: true,
-      ),
       body: Center(
-        child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                '운동/게임 목록',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-
-              // 예시 다른 게임 버튼들
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: 다른 게임1 시작
-                },
-                child: const Text('다른 게임1 시작하기'),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  // TODO: 다른 게임2 시작
-                },
-                child: const Text('다른 게임2 시작하기'),
-              ),
-              const SizedBox(height: 30),
-
-              // 플래피 버드 시작하기 버튼
-              ElevatedButton(
-                onPressed: () {
-                  // [중요] FlappyBirdScreen으로 이동
+              // 카드 형태의 플래피 버드 시작하기 버튼
+              GestureDetector(
+                onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -49,7 +23,30 @@ class ExerciseScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text('플래피 버드 시작하기'),
+                child: Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 30, horizontal: 60),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.videogame_asset,
+                          size: 80,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          '플래피 버드 시작하기',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

@@ -4,7 +4,7 @@ import '../components/custom_bottom_navigation_bar.dart';
 import '../screens/exercise_screen.dart';
 import '../screens/gallery_screen.dart';
 import '../screens/home_screen.dart';
-import '../screens/settings_screen.dart';
+import '../screens/profile_screen.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -20,7 +20,7 @@ class _MainLayoutState extends State<MainLayout> {
     HomeScreen(),
     GalleryScreen(),
     ExerciseScreen(),
-    SettingsScreen(),
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
