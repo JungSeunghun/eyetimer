@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../table/photo_table.dart';
+import '../table/vision_care_table.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -7,13 +9,7 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   static const String _databaseName = 'photos.db';
-  static const int _databaseVersion = 2; // 데이터베이스 버전을 2로 변경
-
-  static const String photoTable = 'photos';
-  static const String columnId = 'id';
-  static const String columnFilePath = 'file_path';
-  static const String columnTimestamp = 'timestamp';
-  static const String columnMemo = 'memo';
+  static const int _databaseVersion = 3; // DB 버전 유지
 
   Database? _database;
 
@@ -36,21 +32,16 @@ class DatabaseHelper {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE $photoTable (
-        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
-        $columnFilePath TEXT NOT NULL,
-        $columnTimestamp TEXT NOT NULL,
-        $columnMemo TEXT
-      )
-    ''');
+    await db.execute(PhotoTable.createTableQuery);
+    await db.execute(VisionCareTable.createTableQuery);
   }
 
-  // 데이터베이스 버전이 변경되었을 때 실행되는 메서드
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // memo 컬럼 추가
-      await db.execute('ALTER TABLE $photoTable ADD COLUMN $columnMemo TEXT');
+      await db.execute('ALTER TABLE ${PhotoTable.tableName} ADD COLUMN ${PhotoTable.columnMemo} TEXT');
+    }
+    if (oldVersion < 3) {
+      await db.execute(VisionCareTable.createTableQuery);
     }
   }
 }

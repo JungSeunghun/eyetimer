@@ -1,77 +1,73 @@
 import 'package:sqflite/sqflite.dart';
 import '../database/database_helper.dart';
 import '../models/photo.dart';
+import '../table/photo_table.dart';
 
 class PhotoRepository {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
-  // 사진 삽입
+  /// 📌 사진 삽입
   Future<void> insertPhoto(Photo photo) async {
     final db = await _databaseHelper.database;
     await db.insert(
-      DatabaseHelper.photoTable,
+      PhotoTable.tableName, // 변경: 테이블명 PhotoTable에서 가져옴
       photo.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
+  /// 📌 모든 사진 가져오기
   Future<List<Photo>> getAllPhotos() async {
     final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> result = await db.query('photos');
-    final List<Photo> resultList = result.map((json) {
-      return Photo.fromMap(json);
-    }).toList();
-    return resultList;
+    final result = await db.query(PhotoTable.tableName);
+    return result.map((json) => Photo.fromMap(json)).toList();
   }
 
-
-  // 오늘 찍은 사진 가져오기
+  /// 📌 오늘 찍은 사진 가져오기
   Future<List<Photo>> getTodayPhotos() async {
     final db = await _databaseHelper.database;
-    final todayDate = DateTime.now().toIso8601String().substring(0, 10); // YYYY-MM-DD
+    final todayDate = DateTime.now().toIso8601String().split('T')[0]; // YYYY-MM-DD 형식 변환 최적화
 
     final result = await db.query(
-      DatabaseHelper.photoTable,
-      where: '${DatabaseHelper.columnTimestamp} LIKE ?',
+      PhotoTable.tableName,
+      where: '${PhotoTable.columnTimestamp} LIKE ?',
       whereArgs: ['$todayDate%'],
-      orderBy: '${DatabaseHelper.columnTimestamp} DESC',
+      orderBy: '${PhotoTable.columnTimestamp} DESC',
     );
 
-    return result.map((map) => Photo.fromMap(map)).toList();
+    return result.map(Photo.fromMap).toList();
   }
 
-  // 특정 ID로 사진 가져오기
+  /// 📌 특정 ID로 사진 가져오기
   Future<Photo?> getPhotoById(int id) async {
     final db = await _databaseHelper.database;
     final result = await db.query(
-      DatabaseHelper.photoTable,
-      where: '${DatabaseHelper.columnId} = ?',
+      PhotoTable.tableName,
+      where: '${PhotoTable.columnId} = ?',
       whereArgs: [id],
     );
 
-    if (result.isNotEmpty) {
-      return Photo.fromMap(result.first);
-    }
-    return null;
+    return result.isNotEmpty ? Photo.fromMap(result.first) : null;
   }
 
+  /// 📌 사진 메모 업데이트
   Future<void> updatePhotoMemo(int id, String memo) async {
     final db = await _databaseHelper.database;
     await db.update(
-      DatabaseHelper.photoTable,
-      {DatabaseHelper.columnMemo: memo},
-      where: '${DatabaseHelper.columnId} = ?',
+      PhotoTable.tableName,
+      {PhotoTable.columnMemo: memo},
+      where: '${PhotoTable.columnId} = ?',
       whereArgs: [id],
     );
   }
 
+  /// 📌 사진 삭제
   Future<void> deletePhoto(int id) async {
     final db = await _databaseHelper.database;
     await db.delete(
-      DatabaseHelper.photoTable,
-      where: '${DatabaseHelper.columnId} = ?',
+      PhotoTable.tableName,
+      where: '${PhotoTable.columnId} = ?',
       whereArgs: [id],
     );
   }
-
 }
