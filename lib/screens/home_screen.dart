@@ -1,11 +1,15 @@
-import 'dart:async';
 import 'dart:io';
+import 'dart:async';
+import 'dart:isolate';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+
 import '../components/control_buttons.dart';
 import '../components/duration_picker_dialog.dart';
 import '../components/memo_input_dialog.dart';
@@ -15,6 +19,13 @@ import '../components/timer_display.dart';
 import '../models/photo.dart';
 import '../providers/photo_provider.dart';
 import '../services/photo_service.dart';
+import '../my_foreground_task_handler.dart';
+
+// 백그라운드 엔트리 포인트 (최상위에 정의)
+@pragma('vm:entry-point')
+void startCallback() {
+  FlutterForegroundTask.setTaskHandler(MyForegroundTaskHandler());
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,9 +35,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // UI용 텍스트 및 상수
   final String focusModeText = '지금은 나를 위한 시간이에요.';
   final String breakModeText = '잠깐 쉬면서 하늘을 올려다볼까요.';
-  final String noPhotosMessage = '눈이 행복해지는 순간을 담아보세요.\n작은 풍경도 큰 위로가 될 수 있어요.';
+  final String noPhotosMessage =
+      '눈이 행복해지는 순간을 담아보세요.\n작은 풍경도 큰 위로가 될 수 있어요.';
   final String beforeStartText =
       '20분 집중 후 먼 곳을 바라보며 눈의 피로를 줄여보세요.';
 
@@ -41,42 +54,56 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String breakDurationMinutesKey = 'breakDuration_minutes';
   static const String breakDurationSecondsKey = 'breakDuration_seconds';
 
-  Duration focusDuration = Duration(minutes: 20);
-  Duration breakDuration = Duration(minutes: 5);
-  Duration currentDuration = Duration(minutes: 20);
-  bool isRunning = false;
-  bool isPaused = false;
-  bool isFocusMode = true;
-  Timer? timer;
+  // 타이머 설정 (UI 표시용; 실제 타이머는 백그라운드에서 관리)
+  Duration focusDuration = const Duration(minutes: 20);
+  Duration breakDuration = const Duration(minutes: 5);
+  Duration currentDuration = const Duration(minutes: 20);
 
+  // Foreground Service 상태
+  bool isServiceRunning = false;
+  bool isPaused = false;
+
+  // 사진 관련 변수들
   final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
   List<Photo> todayPhotos = [];
-  final PageController _pageController = PageController(
-      viewportFraction: 1.0
-  );
+  final PageController _pageController = PageController(viewportFraction: 1.0);
 
   late FlutterLocalNotificationsPlugin _notificationsPlugin;
+  StreamSubscription<dynamic>? _taskDataSubscription;
+  late ReceivePort _receivePort;
 
   @override
   void initState() {
     super.initState();
     _loadDurations();
     _loadTodayPhotos();
-    _initializeNotifications();
+
+    // ReceivePort 생성 및 등록
+    _receivePort = ReceivePort();
+    IsolateNameServer.registerPortWithName(_receivePort.sendPort, "timer_port");
+
+    // 백그라운드 태스크에서 보내는 데이터를 수신하여 타이머 UI 업데이트
+    _taskDataSubscription = _receivePort.listen((data) {
+      if (data is int) {
+        setState(() {
+          currentDuration = Duration(seconds: data);
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    timer?.cancel();
+    _taskDataSubscription?.cancel();
+    IsolateNameServer.removePortNameMapping("timer_port");
+    FlutterForegroundTask.stopService();
     super.dispose();
   }
 
   Future<void> _loadDurations() async {
     final prefs = await SharedPreferences.getInstance();
-
     setState(() {
-      // 저장된 값을 불러오거나 기본값 설정
       final focusMinutes = prefs.getInt(focusDurationMinutesKey) ?? 20;
       final focusSeconds = prefs.getInt(focusDurationSecondsKey) ?? 0;
       focusDuration = Duration(minutes: focusMinutes, seconds: focusSeconds);
@@ -85,19 +112,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final breakSeconds = prefs.getInt(breakDurationSecondsKey) ?? 0;
       breakDuration = Duration(minutes: breakMinutes, seconds: breakSeconds);
 
-      // 현재 모드에 따라 초기화
       currentDuration = focusDuration;
     });
   }
 
   Future<void> _saveDurations() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // focusDuration 저장
     await prefs.setInt(focusDurationMinutesKey, focusDuration.inMinutes);
     await prefs.setInt(focusDurationSecondsKey, focusDuration.inSeconds % 60);
-
-    // breakDuration 저장
     await prefs.setInt(breakDurationMinutesKey, breakDuration.inMinutes);
     await prefs.setInt(breakDurationSecondsKey, breakDuration.inSeconds % 60);
   }
@@ -107,7 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       todayPhotos = photos;
     });
-
     for (var photo in todayPhotos) {
       precacheImage(
         ResizeImage(FileImage(File(photo.filePath)), width: 512, height: 512),
@@ -122,27 +143,19 @@ class _HomeScreenState extends State<HomeScreen> {
       if (photo != null) {
         final timestamp = DateTime.now().toIso8601String();
         final fileName = timestamp.replaceAll(RegExp(r'[:\.]'), '-');
-
         final appDir = await getApplicationDocumentsDirectory();
         final eyeTimerDir = Directory('${appDir.path}/image');
-
         if (!await eyeTimerDir.exists()) {
           await eyeTimerDir.create(recursive: true);
         }
-
         final newPath = '${eyeTimerDir.path}/$fileName.jpg';
-
         final File tempFile = File(photo.path);
         await tempFile.copy(newPath);
-
-        final memo = await showMemoInputDialog(
-            context,
-            photoPath: photo.path,
-        );
-
-        final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
-        final newPhoto = Photo(id: null, filePath: newPath, timestamp: timestamp, memo: memo);
-
+        final memo = await showMemoInputDialog(context, photoPath: photo.path);
+        final photoProvider =
+        Provider.of<PhotoProvider>(context, listen: false);
+        final newPhoto = Photo(
+            id: null, filePath: newPath, timestamp: timestamp, memo: memo);
         await _photoService.savePhoto(newPath, timestamp, memo);
         photoProvider.addPhoto(newPhoto);
         await photoProvider.loadAllPhotos();
@@ -152,145 +165,53 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _initializeNotifications() {
-    _notificationsPlugin = FlutterLocalNotificationsPlugin();
-
-    // iOS 및 macOS 초기화 설정
-    const darwinInitialization = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+  // Foreground Service 시작
+  void _startForegroundService() async {
+    if (isServiceRunning) return;
+    await FlutterForegroundTask.startService(
+      notificationTitle: focusTitle,
+      notificationText: _getNotificationMessage(currentDuration),
+      callback: startCallback,
     );
-
-    // Android 초기화 설정
-    const androidInitialization = AndroidInitializationSettings('@mipmap/launcher_icon');
-
-    // 전체 초기화 설정
-    const initializationSettings = InitializationSettings(
-      android: androidInitialization,
-      iOS: darwinInitialization, // DarwinInitializationSettings 사용
-    );
-
-    _notificationsPlugin.initialize(initializationSettings);
-  }
-
-  void startTimer() {
-    if (isRunning && !isPaused) return;
-
     setState(() {
-      isRunning = true;
+      isServiceRunning = true;
       isPaused = false;
     });
+  }
 
-    _showNotification(
-      title: focusTitle,
-      body: _getNotificationMessage(currentDuration),
-      silent: false,
-    );
+// 일시정지: 백그라운드 태스크에 'pause' 메시지 전송
+  void _pauseForegroundService() {
+    if (!isServiceRunning || isPaused) return;
+    FlutterForegroundTask.sendDataToTask('pause');
+    setState(() {
+      isPaused = true;
+    });
+  }
 
-    timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        if (currentDuration > const Duration(seconds: 0)) {
-          currentDuration -= const Duration(seconds: 1);
+// 재개: 백그라운드 태스크에 'resume' 메시지 전송
+  void _resumeForegroundService() {
+    if (!isServiceRunning || !isPaused) return;
+    FlutterForegroundTask.sendDataToTask('resume');
+    setState(() {
+      isPaused = false;
+    });
+  }
 
-          _showNotification(
-            title: isFocusMode ? focusTitle : breakTitle,
-            body: _getNotificationMessage(currentDuration),
-            silent: true,
-          );
-        } else {
-          // 모드 전환
-          isFocusMode = !isFocusMode;
-          currentDuration = isFocusMode ? focusDuration : breakDuration;
-
-          _showNotification(
-            title: isFocusMode ? focusTitle : breakTitle,
-            body: _getNotificationMessage(currentDuration),
-            silent: false,
-          );
-        }
-      });
+  // 정지: 서비스 종료
+  void _stopForegroundService() async {
+    if (!isServiceRunning) return;
+    await FlutterForegroundTask.stopService();
+    setState(() {
+      isServiceRunning = false;
+      isPaused = false;
+      currentDuration = focusDuration;
     });
   }
 
   String _getNotificationMessage(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
-
-    if (isFocusMode) {
-      return seconds > 0
-          ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
-          : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.';
-    } else {
-      return seconds > 0
-          ? '$minutes분 $seconds초 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.'
-          : '$minutes분 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.';
-    }
-  }
-
-  void pauseTimer() {
-    if (!isRunning) return;
-
-    setState(() {
-      isPaused = true;
-    });
-
-    _showNotification(
-      title: focusTitle,
-      body: '지금은 일시정지 상태에요.',
-      silent: false,
-    );
-
-    timer?.cancel();
-  }
-
-  void stopTimer() {
-    setState(() {
-      isRunning = false;
-      isPaused = false;
-      isFocusMode = true;
-
-      currentDuration = focusDuration;
-    });
-
-    timer?.cancel();
-    _notificationsPlugin.cancelAll();
-  }
-
-  Future<void> _showNotification({
-    required String title,
-    required String body,
-    bool silent = false,
-  }) async {
-    final androidDetails = AndroidNotificationDetails(
-      'timer_channel',
-      'Timer Notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      ongoing: true, // 알림 고정
-      showWhen: false, // 시간 표시 제거
-      silent: silent, // 소리 설정
-    );
-
-    // iOS 알림 설정
-    final iOSDetails = DarwinNotificationDetails(
-      presentAlert: true, // 알림 표시
-      presentBadge: true, // 배지 업데이트
-      presentSound: !silent, // 소리 설정
-    );
-
-    // 공통 알림 설정
-    final notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iOSDetails,
-    );
-
-    await _notificationsPlugin.show(
-      0, // 알림 ID 고정
-      title,
-      body,
-      notificationDetails,
-    );
+    return (seconds > 0) ? '$minutes분 $seconds초' : '$minutes분';
   }
 
   void _showDurationPickerDialog(BuildContext context) {
@@ -303,11 +224,9 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {
             focusDuration = newFocusDuration;
             breakDuration = newBreakDuration;
-            if (isFocusMode) {
-              currentDuration = focusDuration;
-            }
+            currentDuration = focusDuration;
           });
-          _saveDurations(); // 설정 값 저장
+          _saveDurations();
         },
       ),
     );
@@ -331,7 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 noPhotosMessage: noPhotosMessage,
                 textColor: textColor,
                 onEditMemo: (Photo photo, String updatedMemo) {
-                  // 메모 수정 로직
                   photoProvider.updatePhotoMemo(photo.id!, updatedMemo);
                   photoProvider.loadTodayPhotos();
                 },
@@ -349,30 +267,35 @@ class _HomeScreenState extends State<HomeScreen> {
                     textColor: textColor,
                   ),
                   ControlButtons(
-                    isRunning: isRunning,
+                    isRunning: isServiceRunning,
                     isPaused: isPaused,
-                    onPlay: startTimer,
-                    onPause: pauseTimer,
-                    onStop: stopTimer,
+                    onPlay: () {
+                      if (isServiceRunning && isPaused) {
+                        _resumeForegroundService();
+                      } else {
+                        _startForegroundService();
+                      }
+                    },
+                    onPause: _pauseForegroundService,
+                    onStop: _stopForegroundService,
                     onTakePhoto: takePhoto,
                     primaryColor: theme.primaryColor,
                     textColor: textColor,
                     buttonIconSize: buttonIconSize,
                   ),
                   StatusText(
-                    isRunning: isRunning,
-                    isFocusMode: isFocusMode,
+                    isRunning: isServiceRunning,
+                    isFocusMode: true,
                     focusModeText: focusModeText,
                     breakModeText: breakModeText,
                     beforeStartText: beforeStartText,
                     textColor: textColor,
                   ),
-                  // 설정 버튼 추가
                   Align(
                     alignment: Alignment.center,
                     child: IconButton(
                       icon: Icon(Icons.settings, color: textColor),
-                      onPressed: () => _showDurationPickerDialog(context), // 설정 버튼 클릭 시 타이머 설정 창 열기
+                      onPressed: () => _showDurationPickerDialog(context),
                     ),
                   ),
                 ],
@@ -381,6 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-     );
+    );
   }
 }
