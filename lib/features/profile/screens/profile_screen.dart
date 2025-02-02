@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/vision_care.dart';
-import '../services/vision_care_service.dart';
+import '../../../models/vision_care.dart';
+import '../../../services/vision_care_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);

@@ -12,14 +12,14 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import '../components/control_buttons.dart';
 import '../components/duration_picker_dialog.dart';
-import '../components/memo_input_dialog.dart';
+import '../../../components/memo_input_dialog.dart';
 import '../components/photo_slider.dart';
 import '../components/status_text.dart';
 import '../components/timer_display.dart';
-import '../models/photo.dart';
-import '../providers/photo_provider.dart';
-import '../services/photo_service.dart';
-import '../my_foreground_task_handler.dart';
+import '../../../models/photo.dart';
+import '../../../providers/photo_provider.dart';
+import '../../../services/photo_service.dart';
+import '../../../my_foreground_task_handler.dart';
 
 // 백그라운드 엔트리 포인트 (최상위에 정의)
 @pragma('vm:entry-point')

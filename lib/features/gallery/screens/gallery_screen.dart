@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../components/memo_input_dialog.dart';
-import '../models/photo.dart';
-import '../providers/photo_provider.dart';
+import '../../../components/memo_input_dialog.dart';
+import '../../../models/photo.dart';
+import '../../../providers/photo_provider.dart';
 
 class GalleryScreen extends StatelessWidget {
   const GalleryScreen({super.key});

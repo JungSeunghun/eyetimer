@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/photo.dart';
-import 'memo_input_dialog.dart';
+import '../../../models/photo.dart';
+import '../../../components/memo_input_dialog.dart';
 
 class PhotoSlider extends StatelessWidget {
   final List<Photo> todayPhotos;

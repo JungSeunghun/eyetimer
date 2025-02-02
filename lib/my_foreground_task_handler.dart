@@ -95,7 +95,7 @@ class MyForegroundTaskHandler extends TaskHandler {
     String? title,
     String? body,
   }) async {
-    final notificationTitle = title ?? (isFocusMode ? '집중 시간' : '쉬는 시간');
+    final notificationTitle = title ?? (isFocusMode ? '집중 시간' : '휴식 시간');
     final minutes = currentDuration.inMinutes;
     final seconds = currentDuration.inSeconds % 60;
     final notificationText = body ??

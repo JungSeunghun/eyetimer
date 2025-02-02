@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'flappy_bird_screen.dart';
+import 'blink_rabbit_screen.dart';
 
 class ExerciseScreen extends StatelessWidget {
   const ExerciseScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final backgroundColor = theme.scaffoldBackgroundColor;
+
     return Scaffold(
       body: Center(
         child: Padding(
@@ -19,13 +23,14 @@ class ExerciseScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const FlappyBirdScreen(),
+                      builder: (context) => const BlinkRabbitScreen(),
                     ),
                   );
                 },
                 child: Card(
+                  color: backgroundColor,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   elevation: 5,
                   child: Padding(
@@ -33,15 +38,20 @@ class ExerciseScreen extends StatelessWidget {
                         vertical: 30, horizontal: 60),
                     child: Column(
                       children: [
-                        Icon(
-                          Icons.videogame_asset,
-                          size: 80,
-                          color: Theme.of(context).primaryColor,
+                        Image.asset(
+                          'assets/images/blink_rabbit/rabbit.png',
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.contain,
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          '플래피 버드 시작하기',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        Text(
+                          '깜빡깜빡 토끼',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
                         ),
                       ],
                     ),
