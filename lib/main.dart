@@ -19,10 +19,14 @@ Future<void> main() async {
       channelDescription: 'Timer notification channel',
       channelImportance: NotificationChannelImportance.HIGH,
       priority: NotificationPriority.HIGH,
+      showBadge: true,
+      showWhen: true,
+      playSound: false,
+      onlyAlertOnce: true
     ),
     iosNotificationOptions: const IOSNotificationOptions(
       showNotification: true,
-      playSound: true,
+      playSound: false,
     ),
     foregroundTaskOptions: ForegroundTaskOptions(
       autoRunOnBoot: false,

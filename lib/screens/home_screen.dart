@@ -211,7 +211,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getNotificationMessage(Duration duration) {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
-    return (seconds > 0) ? '$minutes분 $seconds초' : '$minutes분';
+    return (seconds > 0)
+        ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
+        : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.';
   }
 
   void _showDurationPickerDialog(BuildContext context) {

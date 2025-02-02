@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'dart:ui';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class MyForegroundTaskHandler extends TaskHandler {
   Duration currentDuration = Duration();
@@ -11,10 +12,6 @@ class MyForegroundTaskHandler extends TaskHandler {
   Duration breakDuration = const Duration(minutes: 5);
   bool isFocusMode = true;
   bool isPaused = false;
-
-  // 첫 업데이트와 모드 전환 여부를 추적하기 위한 변수들
-  bool _firstNotification = true;
-  bool _lastIsFocusMode = true;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -28,24 +25,25 @@ class MyForegroundTaskHandler extends TaskHandler {
     breakDuration = Duration(minutes: breakMinutes, seconds: breakSeconds);
 
     currentDuration = focusDuration;
-    // onStart에서는 알림 업데이트를 하지 않습니다.
+    _playSoundNotification();
+    _updateNotification();
   }
 
   @override
   void onRepeatEvent(DateTime timestamp) {
     if (!isPaused) {
-      // 시간이 남아있으면 초 단위로 차감
       if (currentDuration > Duration(seconds: 0)) {
+        // 시간이 남아있으면 초 단위로 차감
         currentDuration -= Duration(seconds: 1);
       } else {
-        // 타이머 종료 시 모드 전환 및 해당 모드의 설정 시간으로 재설정
+        // 타이머 종료 시, 먼저 모드 전환 알림 소리 재생
+        _playSoundNotification();
+        // 모드 전환 및 해당 모드의 설정 시간으로 재설정
         isFocusMode = !isFocusMode;
         currentDuration = isFocusMode ? focusDuration : breakDuration;
       }
 
-      // onRepeatEvent에서는 기본적으로 silent 조건을 현재 남은 초에 따라 전달하지만,
-      // 아래 _updateNotification 내부에서 첫 업데이트 및 모드 전환 시 silent를 false로 처리합니다.
-      _updateNotification(silent: currentDuration.inSeconds > 0);
+      _updateNotification();
 
       // UI로 남은 시간(초) 전송 (예: IsolateNameServer를 통한 전송)
       final sendPort = IsolateNameServer.lookupPortByName("timer_port");
@@ -65,14 +63,13 @@ class MyForegroundTaskHandler extends TaskHandler {
         case 'pause':
           isPaused = true;
           _updateNotification(
-            silent: false,
             title: '일시정지',
             body: '현재 타이머가 일시정지 상태입니다.',
           );
           break;
         case 'resume':
           isPaused = false;
-          _updateNotification(silent: false);
+          _updateNotification();
           break;
         case 'stop':
           isPaused = false;
@@ -95,15 +92,9 @@ class MyForegroundTaskHandler extends TaskHandler {
 
   /// _updateNotification: FlutterForegroundTask의 내장 알림 업데이트 기능 사용
   Future<void> _updateNotification({
-    required bool silent,
     String? title,
     String? body,
   }) async {
-    // 첫 업데이트거나 모드가 전환되었으면 silent를 false로 강제
-    if (_firstNotification || _lastIsFocusMode != isFocusMode) {
-      silent = false;
-    }
-
     final notificationTitle = title ?? (isFocusMode ? '집중 시간' : '쉬는 시간');
     final minutes = currentDuration.inMinutes;
     final seconds = currentDuration.inSeconds % 60;
@@ -116,16 +107,64 @@ class MyForegroundTaskHandler extends TaskHandler {
             ? '$minutes분 $seconds초 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.'
             : '$minutes분 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.'));
 
-    // FlutterForegroundTask의 내장 알림 업데이트 함수 사용
     FlutterForegroundTask.updateService(
       notificationTitle: notificationTitle,
       notificationText: notificationText,
-      // silent 옵션에 따라 playSound를 제어할 수 있다면 여기서 처리합니다.
-      // playSound: !silent,
+    );
+  }
+
+  /// _playSoundNotification: 모드 전환 시 단발성 소리 알림을 재생 (flutter_local_notifications 사용)
+  Future<void> _playSoundNotification() async {
+    final localNotifications = FlutterLocalNotificationsPlugin();
+
+    // Android 초기화 설정
+    const androidSettings = AndroidInitializationSettings('mipmap/launcher_icon');
+    // iOS 초기화 설정: 알림 권한 요청 및 기본 옵션 지정
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    const initializationSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    await localNotifications.initialize(initializationSettings);
+
+    // Android 알림 세부 설정 (autoCancel: true로 설정)
+    const androidDetails = AndroidNotificationDetails(
+      'mode_switch_channel',
+      'Mode Switch Notifications',
+      channelDescription: '모드 전환 시 재생되는 알림',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      autoCancel: true,
+      // 커스텀 사운드 사용 시: sound: RawResourceAndroidNotificationSound('alert'),
+    );
+    // iOS 알림 세부 설정
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      // 커스텀 사운드를 사용하려면 sound 인자를 설정 (예: 'alert.aiff')
+    );
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
     );
 
-    // 업데이트 후 상태값 저장
-    _firstNotification = false;
-    _lastIsFocusMode = isFocusMode;
+    // 알림 ID는 foreground 서비스 알림과 별개로 관리 (여기서는 1번 사용)
+    await localNotifications.show(
+      1,
+      '모드 전환',
+      isFocusMode ? '집중 시간이 시작되었습니다.' : '휴식 시간이 시작되었습니다.',
+      notificationDetails,
+    );
+
+    // 알림이 뜬 후 5초 뒤에 자동으로 취소 (iOS는 직접 취소 필요)
+    Future.delayed(const Duration(seconds: 1), () async {
+      await localNotifications.cancel(1);
+    });
   }
 }
