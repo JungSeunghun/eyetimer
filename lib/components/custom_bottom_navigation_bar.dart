@@ -38,8 +38,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
           label: '운동',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined),
-          label: '설정',
+          icon: Icon(Icons.bar_chart_outlined),
+          label: '시력기록',
         ),
       ],
     );

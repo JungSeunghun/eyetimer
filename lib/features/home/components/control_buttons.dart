@@ -43,7 +43,7 @@ class ControlButtons extends StatelessWidget {
             color: textColor,
           ),
           IconButton(
-            icon: Icon(Icons.camera_rounded, size: buttonIconSize - 8),
+            icon: Icon(Icons.photo_camera_rounded, size: buttonIconSize - 8),
             onPressed: onTakePhoto, // 사진 찍기
             color: primaryColor,
           ),

@@ -101,11 +101,11 @@ class MyForegroundTaskHandler extends TaskHandler {
     final notificationText = body ??
         (isFocusMode
             ? (seconds > 0
-            ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
-            : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.')
+            ? '$minutes분 $seconds초 뒤, 눈이 편히 쉬도록 알려드릴게요.'
+            : '$minutes분 뒤, 눈이 편히 쉬도록 알려드릴게요.')
             : (seconds > 0
-            ? '$minutes분 $seconds초 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.'
-            : '$minutes분 동안 창밖을 바라보며 마음과 눈에 휴식을 선물하세요.'));
+            ? '$minutes분 $seconds초 동안 먼 곳을 바라보며 눈에 휴식을 선물하세요.'
+            : '$minutes분 동안 먼 곳을 바라보며 눈에 휴식을 선물하세요.'));
 
     FlutterForegroundTask.updateService(
       notificationTitle: notificationTitle,
@@ -157,7 +157,7 @@ class MyForegroundTaskHandler extends TaskHandler {
     // 알림 ID는 foreground 서비스 알림과 별개로 관리 (여기서는 1번 사용)
     await localNotifications.show(
       1,
-      '모드 전환',
+      isFocusMode ? '집중 시간' : '휴식 시간',
       isFocusMode ? '집중 시간이 시작되었습니다.' : '휴식 시간이 시작되었습니다.',
       notificationDetails,
     );

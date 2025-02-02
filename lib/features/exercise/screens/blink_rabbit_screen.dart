@@ -186,7 +186,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white, width: 2),
                     borderRadius: BorderRadius.circular(30),
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                   child: const Center(
                     child: Text(

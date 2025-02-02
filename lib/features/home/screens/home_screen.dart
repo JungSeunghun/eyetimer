@@ -39,12 +39,11 @@ class _HomeScreenState extends State<HomeScreen> {
   final String focusModeText = '지금은 나를 위한 시간이에요.';
   final String breakModeText = '잠깐 쉬면서 하늘을 올려다볼까요.';
   final String noPhotosMessage =
-      '눈이 행복해지는 순간을 담아보세요.\n작은 풍경도 큰 위로가 될 수 있어요.';
+      '먼 곳의 풍경을 바라보며\n사진으로 기록해보세요.';
   final String beforeStartText =
       '20분 집중 후 먼 곳을 바라보며 눈의 피로를 줄여보세요.';
 
   static const String focusTitle = '집중 시간';
-  static const String breakTitle = '쉬는 시간';
 
   final double sliderSizeFactor = 0.9;
   final double buttonIconSize = 72.0;

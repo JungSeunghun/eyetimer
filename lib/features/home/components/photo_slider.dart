@@ -42,6 +42,7 @@ class PhotoSlider extends StatelessWidget {
     return Center(
       child: Text(
         noPhotosMessage,
+        textAlign: TextAlign.center,
         style: TextStyle(
           height: 2,
           fontSize: 16,
@@ -134,7 +135,7 @@ class PhotoItem extends StatelessWidget {
     if (photo.memo != null && photo.memo!.isNotEmpty) {
       return Center(
         child: Container(
-          color: Colors.black.withOpacity(0.5), // 오타 수정 (withValues → withOpacity)
+          color: Colors.black.withValues(alpha: 0.5),
           padding: const EdgeInsets.all(8.0),
           child: Text(
             photo.memo ?? '',
@@ -155,7 +156,7 @@ class PhotoItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
+          color: Colors.black.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(

@@ -67,10 +67,6 @@ Future<String?> showMemoInputDialog(
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('취소', style: TextStyle(color: textColor)),
-          ),
           if (isEditing && onDelete != null)
             TextButton(
               onPressed: () {
@@ -79,6 +75,10 @@ Future<String?> showMemoInputDialog(
               },
               child: Text('삭제', style: TextStyle(color: Colors.red)),
             ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('취소', style: TextStyle(color: textColor)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, memo),
             child: Text(isEditing ? '수정' : '저장', style: TextStyle(color: textColor)),
