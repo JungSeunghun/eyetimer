@@ -99,24 +99,29 @@ class PhotoSlider extends StatelessWidget {
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () async {
-              final updatedMemo = await showMemoInputDialog(
+              final updatedMemo = await Navigator.push<String?>(
                 context,
-                initialMemo: todayPhotos[index].memo,
-                isEditing: true,
-                onDelete: () async {
-                  onDeletePhoto(todayPhotos[index]);
-                },
-                photoPath: todayPhotos[index].filePath,
+                MaterialPageRoute(
+                  builder: (context) => MemoInputScreen(
+                    initialMemo: todayPhotos[index].memo,
+                    photoPath: todayPhotos[index].filePath,
+                    isEditing: true,
+                    onDelete: () async {
+                      await onDeletePhoto(todayPhotos[index]);
+                    },
+                  ),
+                ),
               );
 
               if (updatedMemo != null) {
-                onEditMemo(todayPhotos[index], updatedMemo);
+                await onEditMemo(todayPhotos[index], updatedMemo);
               }
             },
             child: PhotoItem(
               photo: todayPhotos[index],
               textColor: textColor,
             ),
+
           );
         },
       ),

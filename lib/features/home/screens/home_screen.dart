@@ -147,7 +147,17 @@ class _HomeScreenState extends State<HomeScreen> {
         final newPath = '${eyeTimerDir.path}/$fileName.jpg';
         final File tempFile = File(photo.path);
         await tempFile.copy(newPath);
-        final memo = await showMemoInputDialog(context, photoPath: photo.path);
+
+        // Memo 입력 스크린으로 전환하여 메모 입력받기
+        final memo = await Navigator.push<String?>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MemoInputScreen(
+              photoPath: newPath,
+            ),
+          ),
+        );
+
         final photoProvider =
         Provider.of<PhotoProvider>(context, listen: false);
         final newPhoto = Photo(

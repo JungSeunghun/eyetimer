@@ -66,14 +66,18 @@ class GalleryScreen extends StatelessWidget {
 
                       return GestureDetector(
                         onTap: () async {
-                          final updatedMemo = await showMemoInputDialog(
+                          final updatedMemo = await Navigator.push<String?>(
                             context,
-                            initialMemo: photo.memo,
-                            photoPath: photo.filePath,
-                            isEditing: true,
-                            onDelete: () async {
-                              await photoProvider.deletePhoto(photo.id!);
-                            },
+                            MaterialPageRoute(
+                              builder: (context) => MemoInputScreen(
+                                initialMemo: photo.memo,
+                                photoPath: photo.filePath,
+                                isEditing: true,
+                                onDelete: () async {
+                                  await photoProvider.deletePhoto(photo.id!);
+                                },
+                              ),
+                            ),
                           );
 
                           if (updatedMemo != null) {
