@@ -40,6 +40,32 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
     Navigator.pop(context, memo);
   }
 
+  Future<void> _confirmDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('삭제 확인'),
+          content: Text('정말로 삭제하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('삭제', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirm == true) {
+      widget.onDelete!();
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -108,10 +134,7 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
               children: [
                 if (widget.isEditing && widget.onDelete != null)
                   TextButton(
-                    onPressed: () {
-                      widget.onDelete!();
-                      Navigator.pop(context);
-                    },
+                    onPressed: _confirmDelete,
                     child: Text('삭제', style: TextStyle(color: Colors.red)),
                   ),
                 TextButton(

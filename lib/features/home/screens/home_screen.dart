@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
+import '../../../audio_player_task.dart';
 import '../components/control_buttons.dart';
 import '../components/duration_picker_dialog.dart';
 import '../../../components/memo_input_dialog.dart';
@@ -21,7 +23,6 @@ import '../../../providers/photo_provider.dart';
 import '../../../services/photo_service.dart';
 import '../../../my_foreground_task_handler.dart';
 
-// 백그라운드 엔트리 포인트 (최상위에 정의)
 @pragma('vm:entry-point')
 void startCallback() {
   FlutterForegroundTask.setTaskHandler(MyForegroundTaskHandler());
@@ -69,6 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<dynamic>? _taskDataSubscription;
   late ReceivePort _receivePort;
 
+  AudioHandler? _audioHandler; // AudioHandler를 저장할 변수
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _taskDataSubscription?.cancel();
     IsolateNameServer.removePortNameMapping("timer_port");
     FlutterForegroundTask.stopService();
+    _stopWhiteNoise(); // 정지 시 _audioHandler를 null로 설정하지 않음
     super.dispose();
   }
 
@@ -171,6 +175,78 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String _getWhiteNoiseTitle(String assetPath) {
+    if (assetPath.contains('rain')) return '빗소리';
+    if (assetPath.contains('ocean')) return '파도 소리';
+    if (assetPath.contains('wind')) return '바람 소리';
+    return '백색소음';
+  }
+
+  Future<void> _startWhiteNoise() async {
+    final prefs = await SharedPreferences.getInstance();
+    final assetPath = prefs.getString('white_noise_asset') ?? '';
+    if (assetPath.isEmpty) {
+      // 무음 선택 시 재생하지 않음
+      return;
+    }
+    // _audioHandler가 null인 경우에만 AudioService를 초기화합니다.
+    if (_audioHandler == null) {
+      _audioHandler = await AudioService.init(
+        builder: () => MyAudioHandler(),
+        config: AudioServiceConfig(
+          androidNotificationChannelId: 'white_noise_channel',
+          androidNotificationChannelName: '백색소음 재생',
+          androidNotificationChannelDescription: '백색소음 재생 서비스',
+          notificationColor: const Color(0xFF2196f3),
+          androidNotificationIcon: 'mipmap/launcher_icon',
+        ),
+      );
+    }
+    // 현재 _audioHandler에 설정된 MediaItem을 확인합니다.
+    final currentMediaItem = _audioHandler!.mediaItem.value;
+    // 만약 현재 MediaItem이 없거나, asset 경로가 다르면 새 MediaItem으로 업데이트합니다.
+    if (currentMediaItem == null || currentMediaItem.id != assetPath) {
+      final mediaItem = MediaItem(
+        id: assetPath, // 예: "assets/sounds/rain.mp3"
+        album: "White Noise",
+        title: _getWhiteNoiseTitle(assetPath),
+      );
+      await _audioHandler!.updateMediaItem(mediaItem);
+    }
+    // play() 호출: 일시정지 상태라면 기존 위치에서 재생되고, 정지 후에는 처음부터 재생됩니다.
+    await _audioHandler!.play();
+  }
+
+
+  Future<void> _pauseWhiteNoise() async {
+    if (_audioHandler != null &&
+        _audioHandler!.playbackState.value.processingState != AudioProcessingState.idle) {
+      await _audioHandler!.pause();
+    }
+  }
+
+  Future<void> _resumeWhiteNoise() async {
+    if (_audioHandler != null &&
+        _audioHandler!.playbackState.value.processingState != AudioProcessingState.idle) {
+      await _audioHandler!.play();
+    }
+  }
+
+  Future<void> _stopWhiteNoise() async {
+    if (_audioHandler != null &&
+        _audioHandler!.playbackState.value.processingState != AudioProcessingState.idle) {
+      await _audioHandler!.stop();
+    }
+  }
+
+  String _getNotificationMessage(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return (seconds > 0)
+        ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
+        : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.';
+  }
+
   // Foreground Service 시작
   void _startForegroundService() async {
     if (isServiceRunning) return;
@@ -183,24 +259,26 @@ class _HomeScreenState extends State<HomeScreen> {
       isServiceRunning = true;
       isPaused = false;
     });
+
+    await _startWhiteNoise();
   }
 
-// 일시정지: 백그라운드 태스크에 'pause' 메시지 전송
   void _pauseForegroundService() {
     if (!isServiceRunning || isPaused) return;
     FlutterForegroundTask.sendDataToTask('pause');
     setState(() {
       isPaused = true;
     });
+    _pauseWhiteNoise();
   }
 
-// 재개: 백그라운드 태스크에 'resume' 메시지 전송
   void _resumeForegroundService() {
     if (!isServiceRunning || !isPaused) return;
     FlutterForegroundTask.sendDataToTask('resume');
     setState(() {
       isPaused = false;
     });
+    _resumeWhiteNoise();
   }
 
   // 정지: 서비스 종료
@@ -212,14 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isPaused = false;
       currentDuration = focusDuration;
     });
-  }
-
-  String _getNotificationMessage(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return (seconds > 0)
-        ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
-        : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.';
+    await _stopWhiteNoise();
   }
 
   void _showDurationPickerDialog(BuildContext context) {
@@ -268,13 +339,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   photoProvider.loadTodayPhotos();
                 },
               ),
-              SizedBox(height: 24.0),
+              const SizedBox(height: 24.0),
               TimerDisplay(
                 currentDuration: currentDuration,
                 textColor: textColor,
                 onSettingsPressed: () => _showDurationPickerDialog(context),
               ),
-              SizedBox(height: 16.0),
+              const SizedBox(height: 16.0),
               StatusText(
                 isRunning: isServiceRunning,
                 isFocusMode: true,
@@ -283,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 beforeStartText: beforeStartText,
                 textColor: textColor,
               ),
-              SizedBox(height: 24.0),
+              const SizedBox(height: 32.0),
               ControlButtons(
                 isRunning: isServiceRunning,
                 isPaused: isPaused,
