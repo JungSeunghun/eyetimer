@@ -16,7 +16,7 @@ class BlinkRabbitScreen extends StatefulWidget {
 
 class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
   // 상수들
-  static const String kAppBarTitle = '깜빡깜빡';
+  static const String kAppBarTitle = '깜빡깜빡 토끼';
   static const String kScoreLabel = 'Score';
   static const String kGameOverLabel = 'Game Over!';
   static const String kInstructionMsg = '눈을 깜빡여 조종하세요!';
@@ -30,6 +30,10 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
   int _countdown = 3;
   Timer? _countdownTimer;
 
+  // 얼굴 인식 관련 상태 변수
+  bool _faceDetected = false;
+  String _startMessage = "";
+
   @override
   void initState() {
     super.initState();
@@ -41,8 +45,20 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
         setState(() {});
       };
 
+    // onFacesDetected 콜백에서 얼굴 인식 여부 업데이트
     _cameraService = CameraService(
       onFacesDetected: (faces) {
+        if (faces.isNotEmpty) {
+          if (!_faceDetected) {
+            setState(() {
+              _faceDetected = true;
+            });
+          }
+        } else {
+          setState(() {
+            _faceDetected = false;
+          });
+        }
         // 깜빡임 체크 후 게임에 전달
         _cameraService.checkBlinking(faces, _game.onBlink);
       },
@@ -64,9 +80,34 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
   }
 
   Future<void> _handleStartButton() async {
-    if (!_game.isGameStarted && !_isStartingCountdown) {
-      setState(() => _isStartingCountdown = true);
-      _countdown = 3;
+    if (_game.isGameStarted || _isStartingCountdown) return;
+
+    // 시작 버튼을 누르면 "얼굴을 인식 중입니다." 메시지 표시
+    setState(() {
+      _startMessage = "얼굴을 인식 중입니다.";
+    });
+
+    // 최대 5초 동안 얼굴 인식을 기다림 (100ms 간격 확인)
+    bool detected = false;
+    for (int i = 0; i < 50; i++) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (_faceDetected) {
+        detected = true;
+        break;
+      }
+    }
+
+    if (detected) {
+      // 얼굴 인식 완료 메시지 표시
+      setState(() {
+        _startMessage = "얼굴 인식을 완료했습니다.";
+      });
+      await Future.delayed(const Duration(seconds: 1));
+      setState(() {
+        _startMessage = "";
+        _isStartingCountdown = true;
+        _countdown = 3;
+      });
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         setState(() => _countdown--);
         if (_countdown == 0) {
@@ -75,6 +116,14 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
           setState(() => _isStartingCountdown = false);
         }
       });
+    } else {
+      // 얼굴이 인식되지 않으면 메시지 지우고 오류 스낵바 표시
+      setState(() {
+        _startMessage = "";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("얼굴이 인식되지 않았습니다. 다시 시도해주세요.")),
+      );
     }
   }
 
@@ -93,44 +142,37 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
       ),
       body: Stack(
         children: [
-          // 카메라 프리뷰 (카메라 서비스에 의해 초기화된 컨트롤러 사용)
-          // Positioned.fill(
-          //   child: _cameraService.isCameraInitialized && _cameraService.cameraController != null
-          //       ? Transform(
-          //     alignment: Alignment.center,
-          //     transform: Matrix4.rotationY(math.pi),
-          //     child: cam.CameraPreview(_cameraService.cameraController!),
-          //   )
-          //       : const Center(child: Text('')),
-          // ),
           // Flame Game 위젯
           Positioned.fill(
             child: GameWidget(game: _game),
           ),
           // 점수 오버레이
           Positioned(
-            top: 20,
+            top: 8,
             right: 20,
             child: Text(
               '$kScoreLabel: ${_game.score}',
-              style: const TextStyle(fontSize: 24, color: Colors.white),
+              style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),
-          // 안내 및 게임 오버 메시지
-          // 안내 및 게임 오버 메시지 (중앙보다 위쪽에 배치)
-          if (!_game.isGameStarted)
+          // 안내, 게임 오버, 얼굴 인식 메시지 (중앙보다 위쪽에 배치)
+          if (!_game.isGameStarted && !_isStartingCountdown)
             Align(
               alignment: const Alignment(0, -0.3),
-              child: Text(
-                _game.isGameOver
-                    ? '$kGameOverLabel\n$kScoreLabel: ${_game.score}'
-                    : kInstructionMsg,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: Colors.white),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                color: Colors.black45,
+                child: Text(
+                  _game.isGameOver
+                      ? '$kGameOverLabel\n$kScoreLabel: ${_game.score}'
+                      : '$kInstructionMsg${_startMessage.isNotEmpty ? "\n\n$_startMessage" : ""}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ),
             ),
 
-          // 카운트다운 표시
+          // 카운트다운 표시 (게임 시작 전)
           if (!_game.isGameStarted && _isStartingCountdown)
             Center(
               child: Text(
@@ -149,7 +191,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                 ),
               ),
             ),
-          // 게임 시작 버튼
+          // 게임 시작 버튼 (게임이 시작되지 않고, 카운트다운 중이 아닐 때)
           if (!_game.isGameStarted && !_isStartingCountdown && !_game.isGameOver)
             Positioned(
               bottom: 50,
@@ -182,11 +224,11 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
               child: GestureDetector(
                 onTap: _handleRetryButton,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white, width: 2),
                     borderRadius: BorderRadius.circular(30),
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                   ),
                   child: const Center(
                     child: Text(

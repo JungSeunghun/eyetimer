@@ -9,7 +9,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 
 class CameraService {
-  static const double kEyeOpenThreshold = 0.2;
+  static const double kEyeOpenThreshold = 0.3;
   static const int kBlinkCooldownMs = 100;
 
   cam.CameraController? _cameraController;

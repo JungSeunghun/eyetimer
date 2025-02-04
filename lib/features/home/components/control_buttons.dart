@@ -7,9 +7,6 @@ class ControlButtons extends StatelessWidget {
   final VoidCallback onPause; // 일시 정지
   final VoidCallback onStop; // 중지
   final VoidCallback onTakePhoto; // 사진 찍기
-  final Color primaryColor;
-  final Color textColor;
-  final double buttonIconSize;
 
   const ControlButtons({
     required this.isRunning,
@@ -18,42 +15,70 @@ class ControlButtons extends StatelessWidget {
     required this.onPause,
     required this.onStop,
     required this.onTakePhoto,
-    required this.primaryColor,
-    required this.textColor,
-    required this.buttonIconSize,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -25),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            icon: Icon(
-              isRunning
-                  ? (isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded)
-                  : Icons.play_arrow_rounded,
-              size: buttonIconSize,
-            ),
-            onPressed: isRunning
-                ? (isPaused ? onPlay : onPause)
-                : onPlay, // 시작, 일시 정지, 재개 동작 설정
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final primaryColor = theme.primaryColor;
+    final backgroundColor = theme.scaffoldBackgroundColor;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // 중지 버튼
+        ElevatedButton(
+          onPressed: onStop,
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: backgroundColor,
+            foregroundColor: textColor,
+            shape: const CircleBorder(),
+            padding: const EdgeInsets.all(8),
+          ),
+          child: Icon(
+            Icons.refresh_rounded,
+            size: 32,
             color: textColor,
           ),
-          IconButton(
-            icon: Icon(Icons.photo_camera_rounded, size: buttonIconSize - 8),
-            onPressed: onTakePhoto, // 사진 찍기
+        ),
+        const SizedBox(width: 36),
+        // 시작 / 일시 정지 버튼
+        ElevatedButton(
+          onPressed: isRunning ? (isPaused ? onPlay : onPause) : onPlay,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF242424),
+            foregroundColor: Color(0xFFF8F8F8),
+            shape: const CircleBorder(),
+            padding: const EdgeInsets.all(8),
+          ),
+          child: Icon(
+            isRunning
+                ? (isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded)
+                : Icons.play_arrow_rounded,
+            size: 36,
             color: primaryColor,
           ),
-          IconButton(
-            icon: Icon(Icons.stop_rounded, size: buttonIconSize),
-            onPressed: onStop, // 중지
+        ),
+        const SizedBox(width: 40),
+        // 사진 찍기 버튼
+        ElevatedButton(
+          onPressed: onTakePhoto,
+          style: ElevatedButton.styleFrom(
+            elevation: 0,
+            backgroundColor: backgroundColor,
+            foregroundColor: textColor,
+            shape: const CircleBorder(),
+            padding: const EdgeInsets.all(8),
+          ),
+          child: Icon(
+            Icons.photo_camera_rounded,
+            size: 32,
             color: textColor,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

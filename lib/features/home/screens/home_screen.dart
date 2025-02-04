@@ -41,12 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final String noPhotosMessage =
       '먼 곳의 풍경을 바라보며\n사진으로 기록해보세요.';
   final String beforeStartText =
-      '20분 집중 후 먼 곳을 바라보며 눈의 피로를 줄여보세요.';
+      '잠시 후 먼 곳을 바라보며 눈에 휴식을 선물하세요.';
 
   static const String focusTitle = '집중 시간';
-
-  final double sliderSizeFactor = 0.9;
-  final double buttonIconSize = 72.0;
 
   static const String focusDurationMinutesKey = 'focusDuration_minutes';
   static const String focusDurationSecondsKey = 'focusDuration_seconds';
@@ -244,6 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               PhotoSlider(
                 todayPhotos: photoProvider.todayPhotos,
@@ -259,47 +258,35 @@ class _HomeScreenState extends State<HomeScreen> {
                   photoProvider.loadTodayPhotos();
                 },
               ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  TimerDisplay(
-                    currentDuration: currentDuration,
-                    textColor: textColor,
-                  ),
-                  ControlButtons(
-                    isRunning: isServiceRunning,
-                    isPaused: isPaused,
-                    onPlay: () {
-                      if (isServiceRunning && isPaused) {
-                        _resumeForegroundService();
-                      } else {
-                        _startForegroundService();
-                      }
-                    },
-                    onPause: _pauseForegroundService,
-                    onStop: _stopForegroundService,
-                    onTakePhoto: takePhoto,
-                    primaryColor: theme.primaryColor,
-                    textColor: textColor,
-                    buttonIconSize: buttonIconSize,
-                  ),
-                  StatusText(
-                    isRunning: isServiceRunning,
-                    isFocusMode: true,
-                    focusModeText: focusModeText,
-                    breakModeText: breakModeText,
-                    beforeStartText: beforeStartText,
-                    textColor: textColor,
-                  ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: IconButton(
-                      icon: Icon(Icons.settings, color: textColor),
-                      onPressed: () => _showDurationPickerDialog(context),
-                    ),
-                  ),
-                ],
+              SizedBox(height: 24.0),
+              TimerDisplay(
+                currentDuration: currentDuration,
+                textColor: textColor,
+                onSettingsPressed: () => _showDurationPickerDialog(context),
+              ),
+              SizedBox(height: 16.0),
+              StatusText(
+                isRunning: isServiceRunning,
+                isFocusMode: true,
+                focusModeText: focusModeText,
+                breakModeText: breakModeText,
+                beforeStartText: beforeStartText,
+                textColor: textColor,
+              ),
+              SizedBox(height: 24.0),
+              ControlButtons(
+                isRunning: isServiceRunning,
+                isPaused: isPaused,
+                onPlay: () {
+                  if (isServiceRunning && isPaused) {
+                    _resumeForegroundService();
+                  } else {
+                    _startForegroundService();
+                  }
+                },
+                onPause: _pauseForegroundService,
+                onStop: _stopForegroundService,
+                onTakePhoto: takePhoto,
               ),
             ],
           ),

@@ -19,17 +19,14 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: Offset(0, -15),
-      child: Text(
-        isRunning ? (isFocusMode ? focusModeText : breakModeText) : beforeStartText,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w300,
-          height: 1.5,
-          color: textColor,
-        ),
+    return Text(
+      isRunning ? (isFocusMode ? focusModeText : breakModeText) : beforeStartText,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w300,
+        height: 0.8,
+        color: textColor,
       ),
     );
   }

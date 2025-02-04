@@ -10,7 +10,7 @@ class BlinkRabbitGame extends FlameGame {
   static const double kGravity = 0.25;
   // 기본 상수들
   static const double kBarrierWidth = 0.2;
-  static const double kBarrierSpeed = 0.02;
+  static const double kBarrierSpeed = 0.01;
   static const double kBarrierAcceleration = 0.001;
   static const double kRabbitXCenter = 0.3;
   static const double kBarrierInitialX = 2.0;
@@ -117,7 +117,7 @@ class BlinkRabbitGame extends FlameGame {
 
     // 파이프 재생성 (화면 왼쪽으로 완전히 벗어나면)
     if (barrierX < -1.8) {
-      barrierX = kBarrierInitialX + _random.nextDouble() * kMaxRandomXOffset;
+      barrierX = kBarrierInitialX - _random.nextDouble() * kMaxRandomXOffset;
       barrierTopHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
       barrierGapRandom = 0.25 + _random.nextDouble() * 0.1;  // 0.25 ~ 0.35
       hasPassedPipe = false;

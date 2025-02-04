@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../models/photo.dart';
@@ -26,12 +27,6 @@ class PhotoSlider extends StatelessWidget {
     return Container(
       width: MediaQuery.of(context).size.width * 0.9,
       height: MediaQuery.of(context).size.width * 0.9,
-      decoration: BoxDecoration(
-        border: todayPhotos.isEmpty
-            ? Border.all(color: textColor, width: 1.0)
-            : null,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
       child: todayPhotos.isEmpty
           ? _buildEmptyState()
           : _buildPhotoSlider(context),
@@ -39,16 +34,58 @@ class PhotoSlider extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Text(
-        noPhotosMessage,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          height: 2,
-          fontSize: 16,
-          fontWeight: FontWeight.w300,
-          color: textColor,
-        ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8.0),
+      child: Stack(
+        children: [
+          // 흐릿한 랜드스케이프 배경 이미지 (애니메이션 적용)
+          Positioned.fill(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 1.0),
+              duration: const Duration(seconds: 1),
+              builder: (context, opacity, child) {
+                return Opacity(
+                  opacity: opacity,
+                  child: child,
+                );
+              },
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                child: Image(
+                  image: ResizeImage(
+                    AssetImage('assets/images/landscape.jpg'),
+                    width: 512,
+                    height: 512,
+                  ),
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.low,
+                ),
+              ),
+            ),
+          ),
+          // 전체에 반투명 박스 씌우기
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.4),
+            ),
+          ),
+          // 메시지 표시
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text(
+                noPhotosMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.normal,
+                  height: 1.8,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
