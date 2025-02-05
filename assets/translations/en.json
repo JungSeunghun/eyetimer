@@ -1,0 +1,28 @@
+{
+  "__comment1__": "Home Screen texts",
+  "eye_timer": "Eye Timer",
+  "focus_mode_text": "This is time for yourself.",
+  "break_mode_text": "Let's take a break and look up at the sky.",
+  "no_photos_message": "Record photos of the scenery from afar.",
+  "before_start_text": "Soon, rest your eyes by gazing into the distance.",
+  "focus_title": "Focus Time",
+  "notification_template_with_seconds": "{minutes} minutes {seconds} seconds later, we will remind you to relax your eyes.",
+  "notification_template_without_seconds": "{minutes} minutes later, we will remind you to relax your eyes.",
+  "white_noise_rain": "Rain sound",
+  "white_noise_ocean": "Ocean sound",
+  "white_noise_wind": "Wind sound",
+  "white_noise_default": "White noise",
+
+  "__comment2__": "Duration Picker Dialog texts",
+  "dialog_title": "Time Settings",
+  "focus_time_label": "Focus Time",
+  "break_time_label": "Break Time",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "minute": "min",
+  "second": "sec",
+
+  "__comment3__": "White Noise Dialog texts",
+  "white_noise_select": "Choose White Noise",
+  "white_noise_silent": "Silent"
+}

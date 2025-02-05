@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -105,9 +106,13 @@ class _EyeTimerAppState extends State<EyeTimerApp>
 
         return MaterialApp.router(
           routerConfig: _router,
-          theme: interpolatedTheme, // 애니메이션 적용된 테마
+          title: 'Eye Timer',
+          theme: interpolatedTheme,
           darkTheme: _buildTheme(isDarkMode: true),
           themeMode: darkModeNotifier.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          locale: context.locale,
+          supportedLocales: context.supportedLocales,
+          localizationsDelegates: context.localizationDelegates,
         );
       },
     );

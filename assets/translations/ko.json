@@ -1,0 +1,28 @@
+{
+  "__comment1__": "홈 화면 텍스트",
+  "eye_timer": "Eye Timer",
+  "focus_mode_text": "지금은 나를 위한 시간이에요.",
+  "break_mode_text": "잠깐 쉬면서 하늘을 올려다볼까요.",
+  "no_photos_message": "먼 곳의 풍경을 바라보며\n사진으로 기록해보세요.",
+  "before_start_text": "잠시 후 먼 곳을 바라보며 눈에 휴식을 선물하세요.",
+  "focus_title": "집중 시간",
+  "notification_template_with_seconds": "{minutes}분 {seconds}초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.",
+  "notification_template_without_seconds": "{minutes}분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.",
+  "white_noise_rain": "빗소리",
+  "white_noise_ocean": "파도 소리",
+  "white_noise_wind": "바람 소리",
+  "white_noise_default": "백색소음",
+
+  "__comment2__": "시간 설정 다이얼로그 텍스트",
+  "dialog_title": "시간 설정",
+  "focus_time_label": "집중 시간",
+  "break_time_label": "쉬는 시간",
+  "cancel": "취소",
+  "confirm": "확인",
+  "minute": "분",
+  "second": "초",
+
+  "__comment3__": "백색소음 다이얼로그 텍스트",
+  "white_noise_select": "백색소음 선택",
+  "white_noise_silent": "무음"
+}

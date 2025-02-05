@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/dark_mode_notifier.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -12,15 +13,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   Future<void> _showWhiteNoiseDialog(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
-    // 다이얼로그 함수 시작 시 한 번만 초기화: 없으면 기본 무음(빈 문자열)
+    // 다이얼로그 시작 시 한 번만 초기화: 없으면 기본 무음(빈 문자열)
     String selected = prefs.getString('white_noise_asset') ?? '';
     // 옵션 목록: label과 asset 경로 (무음은 빈 문자열)
     final options = [
-      {'label': '무음', 'asset': ''},
-      {'label': '빗소리', 'asset': 'assets/sounds/rain.mp3'},
-      {'label': '파도 소리', 'asset': 'assets/sounds/ocean.mp3'},
-      {'label': '바람 소리', 'asset': 'assets/sounds/wind.mp3'},
+      {'label': 'white_noise_silent'.tr(), 'asset': ''},
+      {'label': 'white_noise_rain'.tr(), 'asset': 'assets/sounds/rain.mp3'},
+      {'label': 'white_noise_ocean'.tr(), 'asset': 'assets/sounds/ocean.mp3'},
+      {'label': 'white_noise_wind'.tr(), 'asset': 'assets/sounds/wind.mp3'},
     ];
+
+    // 다이얼로그에 적용할 테마 색상 가져오기
+    final theme = Theme.of(context);
+    final backgroundColor = theme.scaffoldBackgroundColor;
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final primaryColor = theme.primaryColor;
 
     await showDialog(
       context: context,
@@ -29,7 +36,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text("백색소음 선택"),
+              backgroundColor: backgroundColor,
+              title: Text(
+                "white_noise_select".tr(),
+                style: TextStyle(color: textColor),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -38,7 +49,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     final label = option['label']!;
                     final isSelected = selected == asset;
                     return CheckboxListTile(
-                      title: Text(label),
+                      activeColor: textColor,
+                      checkColor: primaryColor,
+                      title: Text(label, style: TextStyle(color: textColor)),
                       value: isSelected,
                       onChanged: (bool? value) {
                         setState(() {
@@ -53,14 +66,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("취소"),
+                  child: Text("cancel".tr(), style: TextStyle(color: textColor)),
                 ),
                 TextButton(
                   onPressed: () async {
                     await prefs.setString('white_noise_asset', selected);
                     Navigator.pop(context);
                   },
-                  child: const Text("확인"),
+                  child: Text("confirm".tr(), style: TextStyle(color: textColor)),
                 ),
               ],
             );
@@ -97,7 +110,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              'EyeTimer',
+              'eye_timer'.tr(), // 번역 키: JSON에 "eye_timer": "Eye Timer" / "아이 타이머" 등으로 등록
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,

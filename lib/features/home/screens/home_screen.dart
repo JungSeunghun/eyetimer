@@ -1,15 +1,17 @@
-import 'dart:io';
 import 'dart:async';
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
+
 import 'package:audio_service/audio_service.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import '../../../audio_player_task.dart';
 import '../components/control_buttons.dart';
@@ -36,22 +38,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // UI용 텍스트 및 상수
-  final String focusModeText = '지금은 나를 위한 시간이에요.';
-  final String breakModeText = '잠깐 쉬면서 하늘을 올려다볼까요.';
-  final String noPhotosMessage =
-      '먼 곳의 풍경을 바라보며\n사진으로 기록해보세요.';
-  final String beforeStartText =
-      '잠시 후 먼 곳을 바라보며 눈에 휴식을 선물하세요.';
-
-  static const String focusTitle = '집중 시간';
-
+  // SharedPreferences 키
   static const String focusDurationMinutesKey = 'focusDuration_minutes';
   static const String focusDurationSecondsKey = 'focusDuration_seconds';
   static const String breakDurationMinutesKey = 'breakDuration_minutes';
   static const String breakDurationSecondsKey = 'breakDuration_seconds';
 
-  // 타이머 설정 (UI 표시용; 실제 타이머는 백그라운드에서 관리)
+  // 기본 타이머 값
   Duration focusDuration = const Duration(minutes: 20);
   Duration breakDuration = const Duration(minutes: 5);
   Duration currentDuration = const Duration(minutes: 20);
@@ -70,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<dynamic>? _taskDataSubscription;
   late ReceivePort _receivePort;
 
-  AudioHandler? _audioHandler; // AudioHandler를 저장할 변수
+  AudioHandler? _audioHandler;
 
   @override
   void initState() {
@@ -78,11 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDurations();
     _loadTodayPhotos();
 
-    // ReceivePort 생성 및 등록
     _receivePort = ReceivePort();
     IsolateNameServer.registerPortWithName(_receivePort.sendPort, "timer_port");
 
-    // 백그라운드 태스크에서 보내는 데이터를 수신하여 타이머 UI 업데이트
     _taskDataSubscription = _receivePort.listen((data) {
       if (data is int) {
         setState(() {
@@ -97,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _taskDataSubscription?.cancel();
     IsolateNameServer.removePortNameMapping("timer_port");
     FlutterForegroundTask.stopService();
-    _stopWhiteNoise(); // 정지 시 _audioHandler를 null로 설정하지 않음
+    _stopWhiteNoise();
     super.dispose();
   }
 
@@ -131,7 +122,11 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     for (var photo in todayPhotos) {
       precacheImage(
-        ResizeImage(FileImage(File(photo.filePath)), width: 512, height: 512),
+        ResizeImage(
+          FileImage(File(photo.filePath)),
+          width: 512,
+          height: 512,
+        ),
         context,
       );
     }
@@ -152,20 +147,20 @@ class _HomeScreenState extends State<HomeScreen> {
         final File tempFile = File(photo.path);
         await tempFile.copy(newPath);
 
-        // Memo 입력 스크린으로 전환하여 메모 입력받기
         final memo = await Navigator.push<String?>(
           context,
           MaterialPageRoute(
-            builder: (context) => MemoInputScreen(
-              photoPath: newPath,
-            ),
+            builder: (context) => MemoInputScreen(photoPath: newPath),
           ),
         );
 
-        final photoProvider =
-        Provider.of<PhotoProvider>(context, listen: false);
+        final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
         final newPhoto = Photo(
-            id: null, filePath: newPath, timestamp: timestamp, memo: memo);
+          id: null,
+          filePath: newPath,
+          timestamp: timestamp,
+          memo: memo,
+        );
         await _photoService.savePhoto(newPath, timestamp, memo);
         photoProvider.addPhoto(newPhoto);
         await photoProvider.loadAllPhotos();
@@ -175,21 +170,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _getWhiteNoiseTitle(String assetPath) {
-    if (assetPath.contains('rain')) return '빗소리';
-    if (assetPath.contains('ocean')) return '파도 소리';
-    if (assetPath.contains('wind')) return '바람 소리';
-    return '백색소음';
+  // 백색소음 제목도 번역 키를 사용하도록 변경 (BuildContext 전달)
+  String _getWhiteNoiseTitle(BuildContext context, String assetPath) {
+    if (assetPath.contains('rain')) return 'white_noise_rain'.tr();
+    if (assetPath.contains('ocean')) return 'white_noise_ocean'.tr();
+    if (assetPath.contains('wind')) return 'white_noise_wind'.tr();
+    return 'white_noise_default'.tr();
   }
 
-  Future<void> _startWhiteNoise() async {
+  Future<void> _startWhiteNoise(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     final assetPath = prefs.getString('white_noise_asset') ?? '';
     if (assetPath.isEmpty) {
-      // 무음 선택 시 재생하지 않음
       return;
     }
-    // _audioHandler가 null인 경우에만 AudioService를 초기화합니다.
     if (_audioHandler == null) {
       _audioHandler = await AudioService.init(
         builder: () => MyAudioHandler(),
@@ -202,21 +196,17 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-    // 현재 _audioHandler에 설정된 MediaItem을 확인합니다.
     final currentMediaItem = _audioHandler!.mediaItem.value;
-    // 만약 현재 MediaItem이 없거나, asset 경로가 다르면 새 MediaItem으로 업데이트합니다.
     if (currentMediaItem == null || currentMediaItem.id != assetPath) {
       final mediaItem = MediaItem(
-        id: assetPath, // 예: "assets/sounds/rain.mp3"
+        id: assetPath,
         album: "White Noise",
-        title: _getWhiteNoiseTitle(assetPath),
+        title: _getWhiteNoiseTitle(context, assetPath),
       );
       await _audioHandler!.updateMediaItem(mediaItem);
     }
-    // play() 호출: 일시정지 상태라면 기존 위치에서 재생되고, 정지 후에는 처음부터 재생됩니다.
     await _audioHandler!.play();
   }
-
 
   Future<void> _pauseWhiteNoise() async {
     if (_audioHandler != null &&
@@ -239,19 +229,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // _getNotificationMessage 함수는 번역 키를 이용하여 메시지를 반환합니다.
   String _getNotificationMessage(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds % 60;
-    return (seconds > 0)
-        ? '$minutes분 $seconds초 뒤, 눈이 편안해질 수 있도록 알려드릴게요.'
-        : '$minutes분 뒤, 눈이 편안해질 수 있도록 알려드릴게요.';
+    final minutes = duration.inMinutes.toString();
+    final seconds = (duration.inSeconds % 60).toString();
+    if (int.parse(seconds) > 0) {
+      return 'notification_template_with_seconds'.tr(args: [minutes, seconds]);
+    } else {
+      return 'notification_template_without_seconds'.tr(args: [minutes]);
+    }
   }
 
-  // Foreground Service 시작
   void _startForegroundService() async {
     if (isServiceRunning) return;
     await FlutterForegroundTask.startService(
-      notificationTitle: focusTitle,
+      notificationTitle: 'focus_title'.tr(),
       notificationText: _getNotificationMessage(currentDuration),
       callback: startCallback,
     );
@@ -259,8 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isServiceRunning = true;
       isPaused = false;
     });
-
-    await _startWhiteNoise();
+    await _startWhiteNoise(context);
   }
 
   void _pauseForegroundService() {
@@ -281,7 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _resumeWhiteNoise();
   }
 
-  // 정지: 서비스 종료
   void _stopForegroundService() async {
     if (!isServiceRunning) return;
     await FlutterForegroundTask.stopService();
@@ -310,6 +300,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // 번역 키를 사용하는 getter들
+  String get focusModeText => 'focus_mode_text'.tr();
+  String get breakModeText => 'break_mode_text'.tr();
+  String get noPhotosMessage => 'no_photos_message'.tr();
+  String get beforeStartText => 'before_start_text'.tr();
+  String get focusTitle => 'focus_title'.tr();
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class DurationPickerDialog extends StatefulWidget {
   final Duration focusDuration;
@@ -38,16 +39,16 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
     final backgroundColor = theme.scaffoldBackgroundColor; // AlertDialog 기본 배경색
 
     return AlertDialog(
-      backgroundColor: backgroundColor, // ✅ 배경색 적용
+      backgroundColor: backgroundColor,
       title: Text(
-        '시간 설정',
-        style: TextStyle(color: textColor), // ✅ 제목 색상 적용
+        'dialog_title'.tr(),
+        style: TextStyle(color: textColor),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildAdjustRow(
-            label: '집중 시간',
+            label: 'focus_time_label'.tr(),
             minutes: focusMinutes,
             seconds: focusSeconds,
             onMinutesChanged: (value) => setState(() => focusMinutes = value),
@@ -56,7 +57,7 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
           ),
           const SizedBox(height: 16),
           _buildAdjustRow(
-            label: '쉬는 시간',
+            label: 'break_time_label'.tr(),
             minutes: breakMinutes,
             seconds: breakSeconds,
             onMinutesChanged: (value) => setState(() => breakMinutes = value),
@@ -69,8 +70,8 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
-            '취소',
-            style: TextStyle(color: textColor), // ✅ 버튼 색상 적용
+            'cancel'.tr(),
+            style: TextStyle(color: textColor),
           ),
         ),
         TextButton(
@@ -82,8 +83,8 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             Navigator.pop(context);
           },
           child: Text(
-            '확인',
-            style: TextStyle(color: textColor), // ✅ 버튼 색상 적용
+            'confirm'.tr(),
+            style: TextStyle(color: textColor),
           ),
         ),
       ],
@@ -96,31 +97,31 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
     required int seconds,
     required Function(int) onMinutesChanged,
     required Function(int) onSecondsChanged,
-    required Color textColor, // ✅ 텍스트 색상 추가
+    required Color textColor,
   }) {
     return Column(
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor), // ✅ 텍스트 색상 적용
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
         ),
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              icon: Icon(Icons.remove, color: textColor), // ✅ 아이콘 색상 적용
+              icon: Icon(Icons.remove, color: textColor),
               onPressed: () {
                 if (minutes > 1) onMinutesChanged(minutes - 1);
               },
               splashRadius: 20,
             ),
             Text(
-              '$minutes 분',
-              style: TextStyle(fontSize: 18, color: textColor), // ✅ 텍스트 색상 적용
+              '$minutes ${'minute'.tr()}',
+              style: TextStyle(fontSize: 18, color: textColor),
             ),
             IconButton(
-              icon: Icon(Icons.add, color: textColor), // ✅ 아이콘 색상 적용
+              icon: Icon(Icons.add, color: textColor),
               onPressed: () {
                 if (minutes < 60) onMinutesChanged(minutes + 1);
               },
@@ -132,18 +133,18 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              icon: Icon(Icons.remove, color: textColor), // ✅ 아이콘 색상 적용
+              icon: Icon(Icons.remove, color: textColor),
               onPressed: () {
                 if (seconds > 0) onSecondsChanged(seconds - 10);
               },
               splashRadius: 20,
             ),
             Text(
-              '$seconds 초',
-              style: TextStyle(fontSize: 18, color: textColor), // ✅ 텍스트 색상 적용
+              '$seconds ${'second'.tr()}',
+              style: TextStyle(fontSize: 18, color: textColor),
             ),
             IconButton(
-              icon: Icon(Icons.add, color: textColor), // ✅ 아이콘 색상 적용
+              icon: Icon(Icons.add, color: textColor),
               onPressed: () {
                 if (seconds < 50) onSecondsChanged(seconds + 10);
               },
