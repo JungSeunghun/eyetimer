@@ -2,7 +2,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 
 class Pipe {
@@ -19,7 +21,7 @@ class Pipe {
   });
 }
 
-class BlinkRabbitGame extends FlameGame {
+class BlinkRabbitGame extends FlameGame with TapDetector {
   static const double kJumpForce = -3.5;
   static const double kGravity = 0.25;
   // 기본 상수들
@@ -258,8 +260,15 @@ class BlinkRabbitGame extends FlameGame {
     onGameOver?.call();
   }
 
+  // Blink 또는 터치 시 호출되는 메서드 (점프)
   void onBlink() {
     if (!isGameStarted || isGameOver) return;
     birdVelocity = kJumpForce;
+  }
+
+  @override
+  void onTapDown(TapDownInfo info) {
+    // 터치 이벤트 발생 시 onBlink 호출
+    onBlink();
   }
 }
