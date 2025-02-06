@@ -257,7 +257,10 @@ class BlinkRabbitGame extends FlameGame with TapDetector {
   void endGame() {
     isGameOver = true;
     isGameStarted = false;
-    onGameOver?.call();
+    // 빌드 완료 후에 onGameOver 콜백 호출 (setState 호출을 지연)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      onGameOver?.call();
+    });
   }
 
   // Blink 또는 터치 시 호출되는 메서드 (점프)
