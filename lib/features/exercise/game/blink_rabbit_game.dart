@@ -66,8 +66,8 @@ class BlinkRabbitGame extends FlameGame {
 
   // 파이프 리스트: 초기화 시 빈 리스트로 설정
   List<Pipe> pipes = [];
-  // 게임 시작 시 파이프 개수를 2개 또는 3개로 결정 (초기값 설정)
-  int pipeCount = 0;
+  // 게임 시작 시 파이프 개수를 5개로 결정
+  int pipeCount = 5;
 
   BlinkRabbitGame();
 
@@ -125,7 +125,9 @@ class BlinkRabbitGame extends FlameGame {
 
       // 파이프 재생성: 화면 왼쪽 끝(-1.8)보다 많이 벗어나면 오른쪽에서 재생성
       if (pipe.x < -1.8) {
-        final double maxX = pipes.map((p) => p.x).reduce(math.max);
+        // 최소값으로 kBarrierInitialX를 보장
+        final double maxX =
+        pipes.fold<double>(kBarrierInitialX, (prev, p) => math.max(prev, p.x));
         pipe.x = maxX + kPipeSpacing + _random.nextDouble() * kMaxRandomXOffset;
         pipe.topHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
         pipe.gap = 0.25 + _random.nextDouble() * 0.1;       // 0.25 ~ 0.35
@@ -202,7 +204,8 @@ class BlinkRabbitGame extends FlameGame {
     final Matrix4 tileTransform = Matrix4.diagonal3Values(tileScale, tileScale, 1);
     final Rect ceilingRect = Rect.fromLTWH(0, 0, screenW, kCeilingFloorHeight);
     final Paint ceilingPaint = Paint()
-      ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, tileTransform.storage);
+      ..shader =
+      ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, tileTransform.storage);
     canvas.drawRect(ceilingRect, ceilingPaint);
 
     // 바닥 타일 패턴 렌더링 (y축 뒤집기 적용)
@@ -211,7 +214,8 @@ class BlinkRabbitGame extends FlameGame {
       ..scale(tileScale, -tileScale);
     final Rect floorRect = Rect.fromLTWH(0, screenH - kCeilingFloorHeight, screenW, kCeilingFloorHeight);
     final Paint floorPaint = Paint()
-      ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, floorTransform.storage);
+      ..shader =
+      ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, floorTransform.storage);
     canvas.drawRect(floorRect, floorPaint);
 
     // 토끼 렌더링
@@ -226,6 +230,7 @@ class BlinkRabbitGame extends FlameGame {
     canvas.restore();
   }
 
+  // 게임 시작 시 호출하는 메서드 (startGame)
   void startGame() {
     isGameStarted = true;
     isGameOver = false;
@@ -235,11 +240,12 @@ class BlinkRabbitGame extends FlameGame {
     birdVelocity = 0;
     currentBarrierSpeed = kBarrierSpeed;
 
-    // 게임 시작 시 파이프 개수를 2개 또는 3개로 무작위 결정
-    pipeCount = 2 + _random.nextInt(2); // 2 또는 3
+    // 파이프를 5개 생성
+    pipeCount = 5;
     pipes = [];
     for (int i = 0; i < pipeCount; i++) {
-      double initX = kBarrierInitialX + i * (kPipeSpacing + _random.nextDouble() * kMaxRandomXOffset);
+      double initX =
+          kBarrierInitialX + i * (kPipeSpacing + _random.nextDouble() * kMaxRandomXOffset);
       double topHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
       double gap = 0.25 + _random.nextDouble() * 0.1;        // 0.25 ~ 0.35
       pipes.add(Pipe(x: initX, topHeight: topHeight, gap: gap));
