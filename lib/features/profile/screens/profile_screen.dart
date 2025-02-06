@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../models/vision_care.dart';
 import '../../../services/vision_care_service.dart';
 
@@ -43,7 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return AlertDialog(
           backgroundColor: backgroundColor,
           title: Text(
-            isEditing ? '시력 수정' : '시력 추가',
+            isEditing ? 'profile.vision_edit'.tr() : 'profile.vision_add'.tr(),
             style: TextStyle(color: textColor),
           ),
           content: Column(
@@ -53,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: leftEyeController,
                 cursorColor: textColor,
                 decoration: InputDecoration(
-                  labelText: '왼쪽 시력',
+                  labelText: 'profile.left_eye'.tr(),
                   labelStyle: TextStyle(color: textColor),
                   border: OutlineInputBorder(
                     borderSide: BorderSide(color: textColor),
@@ -74,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: rightEyeController,
                 cursorColor: textColor,
                 decoration: InputDecoration(
-                  labelText: '오른쪽 시력',
+                  labelText: 'profile.right_eye'.tr(),
                   labelStyle: TextStyle(color: textColor),
                   border: OutlineInputBorder(
                     borderSide: BorderSide(color: textColor),
@@ -101,21 +102,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     builder: (context) => AlertDialog(
                       backgroundColor: backgroundColor,
                       title: Text(
-                        '삭제 확인',
+                        'profile.delete_confirm_title'.tr(),
                         style: TextStyle(color: textColor),
                       ),
                       content: Text(
-                        '해당 시력 기록을 삭제하시겠습니까?',
+                        'profile.delete_confirm_content'.tr(),
                         style: TextStyle(color: textColor),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('취소'),
+                          child: Text('cancel'.tr()),
                         ),
                         ElevatedButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: const Text('삭제'),
+                          child: Text('delete'.tr()),
                         ),
                       ],
                     ),
@@ -126,15 +127,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _loadVisionData();
                   }
                 },
-                child: const Text(
-                  '삭제',
-                  style: TextStyle(color: Colors.red),
+                child: Text(
+                  'delete'.tr(),
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                '취소',
+                'cancel'.tr(),
                 style: TextStyle(color: textColor),
               ),
             ),
@@ -150,13 +151,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   leftEyeVision: leftEye,
                   rightEyeVision: rightEye,
                 );
-
                 await _visionCareService.saveVision(newVision);
                 Navigator.pop(context);
                 _loadVisionData();
               },
               child: Text(
-                isEditing ? '수정' : '저장',
+                isEditing ? 'edit'.tr() : 'save'.tr(),
                 style: TextStyle(color: textColor),
               ),
             ),
@@ -183,12 +183,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding:
+        const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '시력 기록',
+              'profile.vision_record'.tr(),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -200,7 +201,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _visionList.isEmpty
                   ? Center(
                 child: Text(
-                  '기록이 없습니다.\nFAB 버튼을 눌러 시력을 추가하세요.',
+                  'profile.no_record'.tr(),
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: textColor),
                 ),
@@ -223,7 +224,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
                             Text(
                               vision.date,
@@ -235,7 +237,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              '왼쪽 시력: ${vision.leftEyeVision}   오른쪽 시력: ${vision.rightEyeVision}',
+                              'profile.vision_values'.tr(namedArgs: {
+                                'left': vision.leftEyeVision.toString(),
+                                'right': vision.rightEyeVision.toString()
+                              }),
                               style: TextStyle(
                                 fontSize: 14,
                                 color: textColor,

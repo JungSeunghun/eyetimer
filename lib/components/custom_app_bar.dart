@@ -73,7 +73,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     await prefs.setString('white_noise_asset', selected);
                     Navigator.pop(context);
                   },
-                  child: Text("confirm".tr(), style: TextStyle(color: textColor)),
+                  child: Text("save".tr(), style: TextStyle(color: textColor)),
                 ),
               ],
             );
@@ -131,14 +131,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             );
           },
           child: IconButton(
-            key: ValueKey(darkModeNotifier.isDarkMode),
+            key: const ValueKey("whiteNoise"),
             icon: Icon(
-              darkModeNotifier.isDarkMode
-                  ? Icons.light_mode_outlined
-                  : Icons.dark_mode_outlined,
+              Icons.audiotrack_outlined,
               color: textColor,
             ),
-            onPressed: () => darkModeNotifier.toggleDarkMode(),
+            onPressed: () => _showWhiteNoiseDialog(context),
           ),
         ),
         AnimatedSwitcher(
@@ -150,12 +148,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             );
           },
           child: IconButton(
-            key: const ValueKey("whiteNoise"),
+            key: ValueKey(darkModeNotifier.isDarkMode),
             icon: Icon(
-              Icons.volume_up,
+              darkModeNotifier.isDarkMode
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
               color: textColor,
             ),
-            onPressed: () => _showWhiteNoiseDialog(context),
+            onPressed: () => darkModeNotifier.toggleDarkMode(),
           ),
         ),
       ],

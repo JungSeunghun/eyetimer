@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'blink_rabbit_screen.dart';
 
@@ -46,7 +47,7 @@ class ExerciseScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          '깜빡깜빡 토끼',
+                          'blink_rabbit_appbar_title'.tr(),
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,

@@ -234,9 +234,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final minutes = duration.inMinutes.toString();
     final seconds = (duration.inSeconds % 60).toString();
     if (int.parse(seconds) > 0) {
-      return 'notification_template_with_seconds'.tr(args: [minutes, seconds]);
+      return 'notification_template_with_seconds'.tr(namedArgs: {
+        'minutes': minutes,
+        'seconds' : seconds
+      });
     } else {
-      return 'notification_template_without_seconds'.tr(args: [minutes]);
+      return 'notification_template_without_seconds'.tr(namedArgs: {
+        'minutes': minutes,
+      });
     }
   }
 

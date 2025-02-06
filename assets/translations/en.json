@@ -17,12 +17,57 @@
   "dialog_title": "Time Settings",
   "focus_time_label": "Focus Time",
   "break_time_label": "Break Time",
-  "cancel": "Cancel",
-  "confirm": "Confirm",
   "minute": "min",
   "second": "sec",
 
   "__comment3__": "White Noise Dialog texts",
   "white_noise_select": "Choose White Noise",
-  "white_noise_silent": "Silent"
+  "white_noise_silent": "Silent",
+
+  "__comment4__": "Bottom Navigation Bar texts",
+  "bottom_nav_timer": "Timer",
+  "bottom_nav_gallery": "Gallery",
+  "bottom_nav_exercise": "Exercise",
+  "bottom_nav_eye_record": "Eye Record",
+
+  "__comment_common__": "Common buttons and labels",
+  "cancel": "Cancel",
+  "save": "Save",
+  "edit": "Edit",
+  "delete": "Delete",
+
+  "__comment5__": "Memo Input Screen texts",
+  "delete_confirm_title": "Delete Confirmation",
+  "delete_confirm_content": "Are you sure you want to delete?",
+  "enter_memo_hint": "Enter your memo",
+
+  "__comment6__": "Blink Rabbit Game Screen texts",
+  "blink_rabbit_appbar_title": "Blink Rabbit",
+  "score_label": "Score",
+  "game_over_label": "Game Over!",
+  "instruction_msg": "Blink your eyes to control!",
+  "start_button_label": "Start Game",
+  "retry_button_label": "Retry",
+
+  "__comment7__": "Face recognition messages",
+  "face_recognizing_msg": "Recognizing face...",
+  "face_recognized_msg": "Face recognized.",
+  "face_not_detected_msg": "Face not detected. Please try again.",
+
+  "__comment8__": "Vision Record Screen texts",
+  "profile.vision_record": "Vision Record",
+  "profile.vision_add": "Add Vision",
+  "profile.vision_edit": "Edit Vision",
+  "profile.left_eye": "Left Eye",
+  "profile.right_eye": "Right Eye",
+  "profile.delete_confirm_title": "Delete Confirmation",
+  "profile.delete_confirm_content": "Are you sure you want to delete this vision record?",
+  "profile.vision_values": "Left Eye: {left} Right Eye: {right}",
+  "profile.no_record": "No records.\nPress the FAB to add vision.",
+
+  "__comment9__": "Foreground Task texts",
+  "focus_time": "Focus Time",
+  "break_time": "Break Time",
+  "focus_started": "Focus time started.",
+  "break_started": "Break time started."
 }

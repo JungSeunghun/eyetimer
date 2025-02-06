@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class MemoInputScreen extends StatefulWidget {
@@ -41,27 +42,44 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
   }
 
   Future<void> _confirmDelete() async {
+    final theme = Theme.of(context);
+    final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
+    final backgroundColor = theme.scaffoldBackgroundColor;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('삭제 확인'),
-          content: Text('정말로 삭제하시겠습니까?'),
+          backgroundColor: backgroundColor,
+          title: Text(
+            'delete_confirm_title'.tr(),
+            style: TextStyle(color: textColor),
+          ),
+          content: Text(
+            'delete_confirm_content'.tr(),
+            style: TextStyle(color: textColor),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
+              child: Text(
+                'cancel'.tr(),
+                style: TextStyle(color: textColor),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('삭제', style: TextStyle(color: Colors.red)),
+              child: Text(
+                'delete'.tr(),
+                style: const TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
       },
     );
     if (confirm == true) {
-      widget.onDelete!();
+      widget.onDelete?.call();
       Navigator.pop(context);
     }
   }
@@ -79,7 +97,7 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
         elevation: 0,
         iconTheme: IconThemeData(color: textColor),
         title: Text(
-          widget.isEditing ? '수정' : '저장',
+          widget.isEditing ? 'edit'.tr() : 'save'.tr(),
           style: TextStyle(color: textColor),
         ),
       ),
@@ -96,7 +114,7 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
                     FileImage(File(widget.photoPath)),
                     width: 500,
                   ),
-                  fit: BoxFit.contain, // BoxFit.contain로 사진을 화면에 맞게 조정
+                  fit: BoxFit.contain,
                   filterQuality: FilterQuality.low,
                   frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                     if (wasSynchronouslyLoaded) return child;
@@ -117,7 +135,7 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
               controller: _controller,
               onChanged: (value) => memo = value,
               decoration: InputDecoration(
-                hintText: '메모를 입력하세요.',
+                hintText: 'enter_memo_hint'.tr(),
                 focusedBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: textColor),
                 ),
@@ -135,12 +153,13 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
                 if (widget.isEditing && widget.onDelete != null)
                   TextButton(
                     onPressed: _confirmDelete,
-                    child: Text('삭제', style: TextStyle(color: Colors.red)),
+                    child: Text('delete'.tr(),
+                        style: const TextStyle(color: Colors.red)),
                   ),
                 TextButton(
                   onPressed: _saveMemo,
                   child: Text(
-                    widget.isEditing ? '수정' : '저장',
+                    widget.isEditing ? 'edit'.tr() : 'save'.tr(),
                     style: TextStyle(color: textColor),
                   ),
                 ),

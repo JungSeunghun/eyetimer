@@ -83,7 +83,7 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             Navigator.pop(context);
           },
           child: Text(
-            'confirm'.tr(),
+            'save'.tr(),
             style: TextStyle(color: textColor),
           ),
         ),

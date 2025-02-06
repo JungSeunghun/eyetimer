@@ -5,6 +5,20 @@ import 'dart:ui' as ui;
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+class Pipe {
+  double x;
+  double topHeight;
+  double gap;
+  bool hasPassed;
+
+  Pipe({
+    required this.x,
+    required this.topHeight,
+    required this.gap,
+    this.hasPassed = false,
+  });
+}
+
 class BlinkRabbitGame extends FlameGame {
   static const double kJumpForce = -3.5;
   static const double kGravity = 0.25;
@@ -20,6 +34,8 @@ class BlinkRabbitGame extends FlameGame {
   static const double kRabbitRotationMultiplier = 0.03;
   static const double kRabbitVelocityMultiplier = 0.02;
   static const double kCeilingFloorHeight = 40;
+  // 파이프 간 간격 (파이프 재생성 시 기준): 간격을 좁게 하기 위해 1.8 -> 1.0으로 변경
+  static const double kPipeSpacing = 1.0;
 
   final math.Random _random = math.Random();
 
@@ -28,20 +44,15 @@ class BlinkRabbitGame extends FlameGame {
 
   bool isGameStarted = false;
   bool isGameOver = false;
-  bool hasPassedPipe = false;
 
   double birdY = 0;
   double birdVelocity = 0;
-
-  double barrierX = kBarrierInitialX;
-  // 상단 파이프 높이: 0.2 ~ 0.6 (화면의 비율)
-  late double barrierTopHeight;
-  // 파이프 gap 크기: 0.25 ~ 0.35 (화면의 비율)
-  late double barrierGapRandom;
-  // 현재 파이프 속도 (게임 진행에 따라 증가)
+  // 모든 파이프에 공통으로 적용되는 속도 (게임 진행에 따라 증가)
   double currentBarrierSpeed = kBarrierSpeed;
 
   int score = 0;
+  // 1초마다 점수를 올리기 위한 타이머 변수
+  double scoreTimer = 0.0;
 
   // 콜백
   VoidCallback? onScoreChanged;
@@ -53,20 +64,20 @@ class BlinkRabbitGame extends FlameGame {
   late ui.Image birdImage;
   late ui.Image tileImage; // 천장/바닥 타일 이미지
 
+  // 파이프 리스트: 초기화 시 빈 리스트로 설정
+  List<Pipe> pipes = [];
+  // 게임 시작 시 파이프 개수를 2개 또는 3개로 결정 (초기값 설정)
+  int pipeCount = 0;
+
   BlinkRabbitGame();
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    // 에셋 로드 (Flame의 images.load() 사용)
     backgroundImage = await images.load('blink_rabbit/background.png');
     pipeImage = await images.load('blink_rabbit/pipe.png');
     birdImage = await images.load('blink_rabbit/rabbit.png');
     tileImage = await images.load('blink_rabbit/tile.png');
-
-    // 초기 파이프 간격 및 상단 파이프 높이 설정
-    barrierTopHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
-    barrierGapRandom = 0.25 + _random.nextDouble() * 0.1;  // 0.25 ~ 0.35
   }
 
   @override
@@ -83,7 +94,6 @@ class BlinkRabbitGame extends FlameGame {
     required double r,
     required Rect rect,
   }) {
-    // rect의 가장 가까운 점 찾기
     double closestX = cx.clamp(rect.left, rect.right);
     double closestY = cy.clamp(rect.top, rect.bottom);
     double dx = cx - closestX;
@@ -97,63 +107,65 @@ class BlinkRabbitGame extends FlameGame {
     if (screenW <= 0 || screenH <= 0) return;
     if (!isGameStarted || isGameOver) return;
 
+    // 1초마다 점수 증가 (누적된 시간 활용)
+    scoreTimer += dt;
+    if (scoreTimer >= 1.0) {
+      score++;
+      scoreTimer -= 1.0;
+      onScoreChanged?.call();
+    }
+
     // 중력 적용
     birdVelocity += kGravity;
     birdY += birdVelocity * kRabbitVelocityMultiplier;
 
-    // 파이프 이동 (현재 속도를 사용)
-    barrierX -= currentBarrierSpeed;
-    // dt에 비례하여 파이프 속도를 증가시킴 (가속 효과)
+    // 각 파이프 업데이트
+    for (var pipe in pipes) {
+      pipe.x -= currentBarrierSpeed;
+
+      // 파이프 재생성: 화면 왼쪽 끝(-1.8)보다 많이 벗어나면 오른쪽에서 재생성
+      if (pipe.x < -1.8) {
+        final double maxX = pipes.map((p) => p.x).reduce(math.max);
+        pipe.x = maxX + kPipeSpacing + _random.nextDouble() * kMaxRandomXOffset;
+        pipe.topHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
+        pipe.gap = 0.25 + _random.nextDouble() * 0.1;       // 0.25 ~ 0.35
+        pipe.hasPassed = false;
+      }
+    }
+    // 파이프 속도 가속
     currentBarrierSpeed += kBarrierAcceleration * dt;
-
-    // 점수 체크 (파이프를 지나쳤을 때)
-    final pipeRight = barrierX * screenW + (screenW * kBarrierWidth);
-    final birdRight = (screenW * kRabbitXCenter) + kRabbitSize;
-    if (!hasPassedPipe && birdRight > pipeRight) {
-      score++;
-      hasPassedPipe = true;
-      onScoreChanged?.call();
-    }
-
-    // 파이프 재생성 (화면 왼쪽으로 완전히 벗어나면)
-    if (barrierX < -1.8) {
-      barrierX = kBarrierInitialX - _random.nextDouble() * kMaxRandomXOffset;
-      barrierTopHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
-      barrierGapRandom = 0.25 + _random.nextDouble() * 0.1;  // 0.25 ~ 0.35
-      hasPassedPipe = false;
-    }
 
     // 토끼(원)의 중심 좌표 (충돌 검사를 위한 원)
     final double birdCenterX = screenW * kRabbitXCenter + kRabbitSize / 2;
     final double birdCenterY = screenH * 0.5 + birdY * 100 + kRabbitSize / 2;
-    final double birdRadius = kRabbitHitboxHalfSize; // 반지름
+    final double birdRadius = kRabbitHitboxHalfSize;
 
-    // 천장/바닥 충돌 체크 (원 기준으로는 단순히 y좌표 검사)
+    // 천장/바닥 충돌 체크
     if ((birdCenterY - birdRadius) < kCeilingFloorHeight ||
         (birdCenterY + birdRadius) > screenH - kCeilingFloorHeight) {
       endGame();
       return;
     }
 
-    // 파이프 충돌 체크 (원-사각형 충돌)
-    // 상단 파이프 사각형
-    final Rect topPipeRect = Rect.fromLTWH(
-      barrierX * screenW,
-      0,
-      screenW * kBarrierWidth,
-      screenH * barrierTopHeight,
-    );
-    // 하단 파이프 사각형
-    final Rect bottomPipeRect = Rect.fromLTWH(
-      barrierX * screenW,
-      screenH * barrierTopHeight + screenH * barrierGapRandom,
-      screenW * kBarrierWidth,
-      screenH * (1 - barrierTopHeight - barrierGapRandom),
-    );
-    // 상단 또는 하단 파이프와 충돌 시 게임 종료
-    if (circleRectCollision(cx: birdCenterX, cy: birdCenterY, r: birdRadius, rect: topPipeRect) ||
-        circleRectCollision(cx: birdCenterX, cy: birdCenterY, r: birdRadius, rect: bottomPipeRect)) {
-      endGame();
+    // 각 파이프에 대해 충돌 체크
+    for (var pipe in pipes) {
+      final Rect topPipeRect = Rect.fromLTWH(
+        pipe.x * screenW,
+        0,
+        screenW * kBarrierWidth,
+        screenH * pipe.topHeight,
+      );
+      final Rect bottomPipeRect = Rect.fromLTWH(
+        pipe.x * screenW,
+        screenH * pipe.topHeight + screenH * pipe.gap,
+        screenW * kBarrierWidth,
+        screenH * (1 - pipe.topHeight - pipe.gap),
+      );
+      if (circleRectCollision(cx: birdCenterX, cy: birdCenterY, r: birdRadius, rect: topPipeRect) ||
+          circleRectCollision(cx: birdCenterX, cy: birdCenterY, r: birdRadius, rect: bottomPipeRect)) {
+        endGame();
+        return;
+      }
     }
   }
 
@@ -162,39 +174,38 @@ class BlinkRabbitGame extends FlameGame {
     super.render(canvas);
     if (screenW == 0 || screenH == 0) return;
 
-    // 배경 이미지 (화면 전체)
+    // 배경 렌더링
     final Rect bgRect = Rect.fromLTWH(0, 0, screenW, screenH);
     paintImage(canvas: canvas, rect: bgRect, image: backgroundImage, fit: BoxFit.fill);
 
-    // 상단 파이프 렌더링
-    final Rect topPipeRect = Rect.fromLTWH(
-      barrierX * screenW,
-      0,
-      screenW * kBarrierWidth,
-      screenH * barrierTopHeight,
-    );
-    paintImage(canvas: canvas, rect: topPipeRect, image: pipeImage, fit: BoxFit.fill);
+    // 각 파이프 렌더링
+    for (var pipe in pipes) {
+      final Rect topPipeRect = Rect.fromLTWH(
+        pipe.x * screenW,
+        0,
+        screenW * kBarrierWidth,
+        screenH * pipe.topHeight,
+      );
+      paintImage(canvas: canvas, rect: topPipeRect, image: pipeImage, fit: BoxFit.fill);
 
-    // 하단 파이프 렌더링
-    final Rect bottomPipeRect = Rect.fromLTWH(
-      barrierX * screenW,
-      screenH * barrierTopHeight + screenH * barrierGapRandom,
-      screenW * kBarrierWidth,
-      screenH * (1 - barrierTopHeight - barrierGapRandom),
-    );
-    paintImage(canvas: canvas, rect: bottomPipeRect, image: pipeImage, fit: BoxFit.fill);
+      final Rect bottomPipeRect = Rect.fromLTWH(
+        pipe.x * screenW,
+        screenH * pipe.topHeight + screenH * pipe.gap,
+        screenW * kBarrierWidth,
+        screenH * (1 - pipe.topHeight - pipe.gap),
+      );
+      paintImage(canvas: canvas, rect: bottomPipeRect, image: pipeImage, fit: BoxFit.fill);
+    }
 
-    // 타일 스케일 계산 (타일 높이를 kCeilingFloorHeight에 맞춤)
+    // 천장 타일 패턴 렌더링
     final double tileScale = kCeilingFloorHeight / tileImage.height.toDouble();
     final Matrix4 tileTransform = Matrix4.diagonal3Values(tileScale, tileScale, 1);
-
-    // 천장 타일 패턴 (ImageShader 사용)
     final Rect ceilingRect = Rect.fromLTWH(0, 0, screenW, kCeilingFloorHeight);
     final Paint ceilingPaint = Paint()
       ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, tileTransform.storage);
     canvas.drawRect(ceilingRect, ceilingPaint);
 
-    // 바닥 타일 패턴 (y축 뒤집기 적용)
+    // 바닥 타일 패턴 렌더링 (y축 뒤집기 적용)
     final Matrix4 floorTransform = Matrix4.identity()
       ..translate(0.0, kCeilingFloorHeight)
       ..scale(tileScale, -tileScale);
@@ -203,7 +214,7 @@ class BlinkRabbitGame extends FlameGame {
       ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, floorTransform.storage);
     canvas.drawRect(floorRect, floorPaint);
 
-    // 캐릭터(토끼) 렌더링
+    // 토끼 렌더링
     final double birdRenderY = screenH * 0.5 + birdY * 100;
     final Rect birdRect = Rect.fromLTWH(screenW * kRabbitXCenter, birdRenderY, kRabbitSize, kRabbitSize);
     final double angle = birdVelocity * kRabbitRotationMultiplier;
@@ -219,13 +230,20 @@ class BlinkRabbitGame extends FlameGame {
     isGameStarted = true;
     isGameOver = false;
     score = 0;
+    scoreTimer = 0.0;
     birdY = 0;
     birdVelocity = 0;
-    barrierX = kBarrierInitialX + _random.nextDouble() * kMaxRandomXOffset;
-    barrierTopHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
-    barrierGapRandom = 0.25 + _random.nextDouble() * 0.1;  // 0.25 ~ 0.35
     currentBarrierSpeed = kBarrierSpeed;
-    hasPassedPipe = false;
+
+    // 게임 시작 시 파이프 개수를 2개 또는 3개로 무작위 결정
+    pipeCount = 2 + _random.nextInt(2); // 2 또는 3
+    pipes = [];
+    for (int i = 0; i < pipeCount; i++) {
+      double initX = kBarrierInitialX + i * (kPipeSpacing + _random.nextDouble() * kMaxRandomXOffset);
+      double topHeight = 0.2 + _random.nextDouble() * 0.4; // 0.2 ~ 0.6
+      double gap = 0.25 + _random.nextDouble() * 0.1;        // 0.25 ~ 0.35
+      pipes.add(Pipe(x: initX, topHeight: topHeight, gap: gap));
+    }
   }
 
   void endGame() {

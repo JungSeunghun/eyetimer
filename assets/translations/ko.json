@@ -17,12 +17,57 @@
   "dialog_title": "시간 설정",
   "focus_time_label": "집중 시간",
   "break_time_label": "쉬는 시간",
-  "cancel": "취소",
-  "confirm": "확인",
   "minute": "분",
   "second": "초",
 
   "__comment3__": "백색소음 다이얼로그 텍스트",
   "white_noise_select": "백색소음 선택",
-  "white_noise_silent": "무음"
+  "white_noise_silent": "무음",
+
+  "__comment4__": "하단 네비게이션 바 텍스트",
+  "bottom_nav_timer": "타이머",
+  "bottom_nav_gallery": "갤러리",
+  "bottom_nav_exercise": "운동",
+  "bottom_nav_eye_record": "시력기록",
+
+  "__comment_common__": "공통 버튼 및 라벨",
+  "cancel": "취소",
+  "save": "저장",
+  "edit": "수정",
+  "delete": "삭제",
+
+  "__comment5__": "메모 입력 화면 텍스트",
+  "delete_confirm_title": "삭제 확인",
+  "delete_confirm_content": "정말로 삭제하시겠습니까?",
+  "enter_memo_hint": "메모를 입력하세요.",
+
+  "__comment6__": "깜빡깜빡 토끼 게임 화면 텍스트",
+  "blink_rabbit_appbar_title": "깜빡깜빡 토끼",
+  "score_label": "점수",
+  "game_over_label": "게임 오버!",
+  "instruction_msg": "눈을 깜빡여 조종하세요!",
+  "start_button_label": "게임 시작",
+  "retry_button_label": "다시하기",
+
+  "__comment7__": "얼굴 인식 관련 메시지",
+  "face_recognizing_msg": "얼굴을 인식 중입니다.",
+  "face_recognized_msg": "얼굴 인식을 완료했습니다.",
+  "face_not_detected_msg": "얼굴이 인식되지 않았습니다. 다시 시도해주세요.",
+
+  "__comment8__": "시력 기록 화면 텍스트",
+  "profile.vision_record": "시력 기록",
+  "profile.vision_add": "시력 추가",
+  "profile.vision_edit": "시력 수정",
+  "profile.left_eye": "왼쪽 시력",
+  "profile.right_eye": "오른쪽 시력",
+  "profile.delete_confirm_title": "삭제 확인",
+  "profile.delete_confirm_content": "해당 시력 기록을 삭제하시겠습니까?",
+  "profile.vision_values": "왼쪽 시력: {left} 오른쪽 시력: {right}",
+  "profile.no_record": "기록이 없습니다.\nFAB 버튼을 눌러 시력을 추가하세요.",
+
+  "__comment9__": "Foreground Task 텍스트",
+  "focus_time": "집중 시간",
+  "break_time": "휴식 시간",
+  "focus_started": "집중 시간이 시작되었습니다.",
+  "break_started": "휴식 시간이 시작되었습니다."
 }

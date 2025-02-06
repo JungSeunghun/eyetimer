@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:camera/camera.dart' as cam;
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../game/blink_rabbit_game.dart';
 import '../services/camera_service.dart';
 
@@ -15,13 +16,17 @@ class BlinkRabbitScreen extends StatefulWidget {
 }
 
 class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
-  // 상수들
-  static const String kAppBarTitle = '깜빡깜빡 토끼';
-  static const String kScoreLabel = 'Score';
-  static const String kGameOverLabel = 'Game Over!';
-  static const String kInstructionMsg = '눈을 깜빡여 조종하세요!';
-  static const String kStartButtonLabel = '게임 시작';
-  static const String kRetryButtonLabel = '다시하기';
+  // 번역 키 (translation keys)
+  static const String kAppBarTitleKey = "blink_rabbit_appbar_title";
+  static const String kScoreLabelKey = "score_label";
+  static const String kGameOverLabelKey = "game_over_label";
+  static const String kInstructionMsgKey = "instruction_msg";
+  static const String kStartButtonLabelKey = "start_button_label";
+  static const String kRetryButtonLabelKey = "retry_button_label";
+
+  static const String kFaceRecognizingMsgKey = "face_recognizing_msg";
+  static const String kFaceRecognizedMsgKey = "face_recognized_msg";
+  static const String kFaceNotDetectedMsgKey = "face_not_detected_msg";
 
   late BlinkRabbitGame _game;
   late CameraService _cameraService;
@@ -82,9 +87,9 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
   Future<void> _handleStartButton() async {
     if (_game.isGameStarted || _isStartingCountdown) return;
 
-    // 시작 버튼을 누르면 "얼굴을 인식 중입니다." 메시지 표시
+    // 시작 버튼 클릭 시 "얼굴을 인식 중입니다." 메시지 표시
     setState(() {
-      _startMessage = "얼굴을 인식 중입니다.";
+      _startMessage = kFaceRecognizingMsgKey.tr();
     });
 
     // 최대 5초 동안 얼굴 인식을 기다림 (100ms 간격 확인)
@@ -100,7 +105,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
     if (detected) {
       // 얼굴 인식 완료 메시지 표시
       setState(() {
-        _startMessage = "얼굴 인식을 완료했습니다.";
+        _startMessage = kFaceRecognizedMsgKey.tr();
       });
       await Future.delayed(const Duration(seconds: 1));
       setState(() {
@@ -122,7 +127,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
         _startMessage = "";
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("얼굴이 인식되지 않았습니다. 다시 시도해주세요.")),
+        SnackBar(content: Text(kFaceNotDetectedMsgKey.tr())),
       );
     }
   }
@@ -137,7 +142,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(kAppBarTitle),
+        title: Text(kAppBarTitleKey.tr()),
         centerTitle: true,
       ),
       body: Stack(
@@ -151,7 +156,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
             top: 8,
             right: 20,
             child: Text(
-              '$kScoreLabel: ${_game.score}',
+              '${kScoreLabelKey.tr()}: ${_game.score}',
               style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),
@@ -164,14 +169,13 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                 color: Colors.black45,
                 child: Text(
                   _game.isGameOver
-                      ? '$kGameOverLabel\n$kScoreLabel: ${_game.score}'
-                      : '$kInstructionMsg${_startMessage.isNotEmpty ? "\n\n$_startMessage" : ""}',
+                      ? '${kGameOverLabelKey.tr()}\n${kScoreLabelKey.tr()}: ${_game.score}'
+                      : '${kInstructionMsgKey.tr()}${_startMessage.isNotEmpty ? "\n\n$_startMessage" : ""}',
                   textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
-
           // 카운트다운 표시 (게임 시작 전)
           if (!_game.isGameStarted && _isStartingCountdown)
             Center(
@@ -206,10 +210,10 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                     borderRadius: BorderRadius.circular(30),
                     color: Colors.white.withOpacity(0.1),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      kStartButtonLabel,
-                      style: TextStyle(fontSize: 20, color: Colors.white),
+                      kStartButtonLabelKey.tr(),
+                      style: const TextStyle(fontSize: 20, color: Colors.white),
                     ),
                   ),
                 ),
@@ -230,10 +234,10 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                     borderRadius: BorderRadius.circular(30),
                     color: Colors.white.withOpacity(0.1),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      kRetryButtonLabel,
-                      style: TextStyle(fontSize: 20, color: Colors.white),
+                      kRetryButtonLabelKey.tr(),
+                      style: const TextStyle(fontSize: 20, color: Colors.white),
                     ),
                   ),
                 ),
