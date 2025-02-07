@@ -8,6 +8,41 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 
+/// 최상위 함수: YUV420 데이터를 NV21로 변환 (별도 Isolate에서 실행)
+Uint8List convertYUV420toNV21Isolate(Map<String, dynamic> data) {
+  final int width = data['width'] as int;
+  final int height = data['height'] as int;
+  final Map<String, dynamic> plane0 = data['plane0'];
+  final Map<String, dynamic> plane1 = data['plane1'];
+  final Map<String, dynamic> plane2 = data['plane2'];
+  final Uint8List yBytes = plane0['bytes'] as Uint8List;
+  final int ySize = yBytes.length;
+  final int uvWidth = width ~/ 2;
+  final int uvHeight = height ~/ 2;
+  final Uint8List nv21 = Uint8List(ySize + uvWidth * uvHeight * 2);
+  nv21.setRange(0, ySize, yBytes);
+
+  int uvIndex = ySize;
+  final Uint8List uBytes = plane1['bytes'] as Uint8List;
+  final Uint8List vBytes = plane2['bytes'] as Uint8List;
+  final int uBytesPerRow = plane1['bytesPerRow'] as int;
+  final int vBytesPerRow = plane2['bytesPerRow'] as int;
+
+  for (int row = 0; row < uvHeight; row++) {
+    final int vRowOffset = row * vBytesPerRow;
+    final int uRowOffset = row * uBytesPerRow;
+    for (int col = 0; col < uvWidth; col++) {
+      final int vOffset = vRowOffset + col;
+      final int uOffset = uRowOffset + col;
+      if (vOffset < vBytes.length && uOffset < uBytes.length) {
+        nv21[uvIndex++] = vBytes[vOffset];
+        nv21[uvIndex++] = uBytes[uOffset];
+      }
+    }
+  }
+  return nv21;
+}
+
 class CameraService {
   static const double kEyeOpenThreshold = 0.3;
   static const int kBlinkCooldownMs = 100;
@@ -52,7 +87,7 @@ class CameraService {
 
     _cameraController = cam.CameraController(
       frontCamera,
-      cam.ResolutionPreset.ultraHigh,
+      cam.ResolutionPreset.high, // 해상도를 낮추면 부담이 줄어듭니다.
       enableAudio: false,
     );
 
@@ -84,9 +119,27 @@ class CameraService {
 
     if (platform == TargetPlatform.android) {
       if (rawFormat == 35) {
-        bytes = _yuv420toNV21(image);
+        // 별도 Isolate를 통해 YUV420 -> NV21 변환
+        final Map<String, dynamic> yuvData = {
+          'width': image.width,
+          'height': image.height,
+          'plane0': {
+            'bytes': image.planes[0].bytes,
+            'bytesPerRow': image.planes[0].bytesPerRow,
+          },
+          'plane1': {
+            'bytes': image.planes[1].bytes,
+            'bytesPerRow': image.planes[1].bytesPerRow,
+          },
+          'plane2': {
+            'bytes': image.planes[2].bytes,
+            'bytesPerRow': image.planes[2].bytesPerRow,
+          },
+        };
+        bytes = await compute(convertYUV420toNV21Isolate, yuvData);
         imageFormat = InputImageFormat.nv21;
       } else if (rawFormat == 17) {
+        // 이 경우는 간단히 Merge 처리
         final WriteBuffer allBytes = WriteBuffer();
         for (cam.Plane plane in image.planes) {
           allBytes.putUint8List(plane.bytes);
@@ -94,7 +147,24 @@ class CameraService {
         bytes = allBytes.done().buffer.asUint8List();
         imageFormat = InputImageFormat.nv21;
       } else {
-        bytes = _yuv420toNV21(image);
+        // 기타 포맷에 대해서도 compute() 적용
+        final Map<String, dynamic> yuvData = {
+          'width': image.width,
+          'height': image.height,
+          'plane0': {
+            'bytes': image.planes[0].bytes,
+            'bytesPerRow': image.planes[0].bytesPerRow,
+          },
+          'plane1': {
+            'bytes': image.planes[1].bytes,
+            'bytesPerRow': image.planes[1].bytesPerRow,
+          },
+          'plane2': {
+            'bytes': image.planes[2].bytes,
+            'bytesPerRow': image.planes[2].bytesPerRow,
+          },
+        };
+        bytes = await compute(convertYUV420toNV21Isolate, yuvData);
         imageFormat = InputImageFormat.nv21;
       }
     } else if (platform == TargetPlatform.iOS) {
@@ -105,7 +175,23 @@ class CameraService {
       bytes = allBytes.done().buffer.asUint8List();
       imageFormat = InputImageFormat.bgra8888;
     } else {
-      bytes = _yuv420toNV21(image);
+      final Map<String, dynamic> yuvData = {
+        'width': image.width,
+        'height': image.height,
+        'plane0': {
+          'bytes': image.planes[0].bytes,
+          'bytesPerRow': image.planes[0].bytesPerRow,
+        },
+        'plane1': {
+          'bytes': image.planes[1].bytes,
+          'bytesPerRow': image.planes[1].bytesPerRow,
+        },
+        'plane2': {
+          'bytes': image.planes[2].bytes,
+          'bytesPerRow': image.planes[2].bytesPerRow,
+        },
+      };
+      bytes = await compute(convertYUV420toNV21Isolate, yuvData);
       imageFormat = InputImageFormat.nv21;
     }
 
@@ -123,35 +209,6 @@ class CameraService {
     );
 
     return await _faceDetector.processImage(inputImage);
-  }
-
-  /// 변환 함수: YUV420 -> NV21
-  Uint8List _yuv420toNV21(cam.CameraImage image) {
-    final yPlane = image.planes[0];
-    final uPlane = image.planes[1];
-    final vPlane = image.planes[2];
-
-    final int ySize = yPlane.bytes.length;
-    final int uvWidth = image.width ~/ 2;
-    final int uvHeight = image.height ~/ 2;
-
-    final Uint8List nv21 = Uint8List(ySize + uvWidth * uvHeight * 2);
-    nv21.setRange(0, ySize, yPlane.bytes);
-
-    int uvIndex = ySize;
-    for (int row = 0; row < uvHeight; row++) {
-      final int vRowOffset = row * vPlane.bytesPerRow;
-      final int uRowOffset = row * uPlane.bytesPerRow;
-      for (int col = 0; col < uvWidth; col++) {
-        final int vOffset = vRowOffset + col;
-        final int uOffset = uRowOffset + col;
-        if (vOffset < vPlane.bytes.length && uOffset < uPlane.bytes.length) {
-          nv21[uvIndex++] = vPlane.bytes[vOffset];
-          nv21[uvIndex++] = uPlane.bytes[uOffset];
-        }
-      }
-    }
-    return nv21;
   }
 
   InputImageRotation _rotationIntToImageRotation(int rotation) {
