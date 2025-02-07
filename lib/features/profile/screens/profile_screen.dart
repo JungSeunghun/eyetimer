@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../../components/google_banner_ad_widget.dart';
 import '../../../models/vision_care.dart';
 import '../../../services/vision_care_service.dart';
 
@@ -256,6 +258,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+      // 하단에 애드몹 배너광고를 고정된 높이로 추가하여 콘텐츠를 가리지 않도록 함.
+      bottomNavigationBar: SizedBox(
+        height: AdSize.banner.height.toDouble(),
+        child: const GoogleBannerAdWidget(),
       ),
     );
   }
