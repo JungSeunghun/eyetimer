@@ -111,73 +111,18 @@ class CameraService {
   }
 
   Future<List<Face>> _detectFacesOnFrame(cam.CameraImage image) async {
-    final rawFormat = image.format.raw;
+    // 이미지의 width, height를 지역 변수에 저장하여 여러 번 접근하지 않도록 함.
+    final int width = image.width;
+    final int height = image.height;
     final platform = defaultTargetPlatform;
-
     late Uint8List bytes;
     late InputImageFormat imageFormat;
 
-    if (platform == TargetPlatform.android) {
-      if (rawFormat == 35) {
-        // 별도 Isolate를 통해 YUV420 -> NV21 변환
-        final Map<String, dynamic> yuvData = {
-          'width': image.width,
-          'height': image.height,
-          'plane0': {
-            'bytes': image.planes[0].bytes,
-            'bytesPerRow': image.planes[0].bytesPerRow,
-          },
-          'plane1': {
-            'bytes': image.planes[1].bytes,
-            'bytesPerRow': image.planes[1].bytesPerRow,
-          },
-          'plane2': {
-            'bytes': image.planes[2].bytes,
-            'bytesPerRow': image.planes[2].bytesPerRow,
-          },
-        };
-        bytes = await compute(convertYUV420toNV21Isolate, yuvData);
-        imageFormat = InputImageFormat.nv21;
-      } else if (rawFormat == 17) {
-        // 이 경우는 간단히 Merge 처리
-        final WriteBuffer allBytes = WriteBuffer();
-        for (cam.Plane plane in image.planes) {
-          allBytes.putUint8List(plane.bytes);
-        }
-        bytes = allBytes.done().buffer.asUint8List();
-        imageFormat = InputImageFormat.nv21;
-      } else {
-        // 기타 포맷에 대해서도 compute() 적용
-        final Map<String, dynamic> yuvData = {
-          'width': image.width,
-          'height': image.height,
-          'plane0': {
-            'bytes': image.planes[0].bytes,
-            'bytesPerRow': image.planes[0].bytesPerRow,
-          },
-          'plane1': {
-            'bytes': image.planes[1].bytes,
-            'bytesPerRow': image.planes[1].bytesPerRow,
-          },
-          'plane2': {
-            'bytes': image.planes[2].bytes,
-            'bytesPerRow': image.planes[2].bytesPerRow,
-          },
-        };
-        bytes = await compute(convertYUV420toNV21Isolate, yuvData);
-        imageFormat = InputImageFormat.nv21;
-      }
-    } else if (platform == TargetPlatform.iOS) {
-      final WriteBuffer allBytes = WriteBuffer();
-      for (cam.Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
-      }
-      bytes = allBytes.done().buffer.asUint8List();
-      imageFormat = InputImageFormat.bgra8888;
-    } else {
-      final Map<String, dynamic> yuvData = {
-        'width': image.width,
-        'height': image.height,
+    // 헬퍼 함수: YUV 데이터 구성을 위한 Map 생성 (중복 코드 제거)
+    Map<String, dynamic> buildYuvData() {
+      return {
+        'width': width,
+        'height': height,
         'plane0': {
           'bytes': image.planes[0].bytes,
           'bytesPerRow': image.planes[0].bytesPerRow,
@@ -191,12 +136,43 @@ class CameraService {
           'bytesPerRow': image.planes[2].bytesPerRow,
         },
       };
+    }
+
+    if (platform == TargetPlatform.android) {
+      final int rawFormat = image.format.raw;
+      if (rawFormat == 35) {
+        final Map<String, dynamic> yuvData = buildYuvData();
+        bytes = await compute(convertYUV420toNV21Isolate, yuvData);
+        imageFormat = InputImageFormat.nv21;
+      } else if (rawFormat == 17) {
+        final WriteBuffer allBytes = WriteBuffer();
+        for (final plane in image.planes) {
+          allBytes.putUint8List(plane.bytes);
+        }
+        bytes = allBytes.done().buffer.asUint8List();
+        imageFormat = InputImageFormat.nv21;
+      } else {
+        final Map<String, dynamic> yuvData = buildYuvData();
+        bytes = await compute(convertYUV420toNV21Isolate, yuvData);
+        imageFormat = InputImageFormat.nv21;
+      }
+    } else if (platform == TargetPlatform.iOS) {
+      final WriteBuffer allBytes = WriteBuffer();
+      for (final plane in image.planes) {
+        allBytes.putUint8List(plane.bytes);
+      }
+      bytes = allBytes.done().buffer.asUint8List();
+      imageFormat = InputImageFormat.bgra8888;
+    } else {
+      final Map<String, dynamic> yuvData = buildYuvData();
       bytes = await compute(convertYUV420toNV21Isolate, yuvData);
       imageFormat = InputImageFormat.nv21;
     }
 
-    final imageSize = Size(image.width.toDouble(), image.height.toDouble());
-    final rotation = _rotationIntToImageRotation(_cameraController!.description.sensorOrientation);
+    final imageSize = Size(width.toDouble(), height.toDouble());
+    final rotation = _rotationIntToImageRotation(
+      _cameraController!.description.sensorOrientation,
+    );
 
     final inputImage = InputImage.fromBytes(
       bytes: bytes,

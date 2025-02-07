@@ -11,6 +11,10 @@ import 'package:flutter/material.dart';
 /// CeilingComponent는 천장을 타일 패턴으로 그리며, 충돌 감지를 위해 Hitbox를 추가합니다.
 class CeilingComponent extends PositionComponent with HasGameRef<BlinkRabbitGame>, CollisionCallbacks {
   final ui.Image tileImage;
+  late final double _tileScale;
+  late final Matrix4 _tileTransform;
+  late final Paint _paint;
+
   CeilingComponent({
     required this.tileImage,
     required Vector2 size,
@@ -20,21 +24,26 @@ class CeilingComponent extends PositionComponent with HasGameRef<BlinkRabbitGame
   Future<void> onLoad() async {
     await super.onLoad();
     add(RectangleHitbox());
+    // onLoad에서 타일 스케일, Matrix4, 그리고 Paint(이미지 shader 포함)를 한 번 계산하여 캐싱합니다.
+    _tileScale = size.y / tileImage.height;
+    _tileTransform = Matrix4.diagonal3Values(_tileScale, _tileScale, 1);
+    _paint = Paint()
+      ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, _tileTransform.storage);
   }
 
   @override
   void render(Canvas canvas) {
-    final double tileScale = size.y / tileImage.height;
-    final Matrix4 tileTransform = Matrix4.diagonal3Values(tileScale, tileScale, 1);
-    final Paint paint = Paint()
-      ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, tileTransform.storage);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), paint);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _paint);
   }
 }
 
 /// FloorComponent는 바닥을 타일 패턴으로 그리며, 충돌 감지를 위해 Hitbox를 추가합니다.
 class FloorComponent extends PositionComponent with HasGameRef<BlinkRabbitGame>, CollisionCallbacks {
   final ui.Image tileImage;
+  late final double _tileScale;
+  late final Matrix4 _tileTransform;
+  late final Paint _paint;
+
   FloorComponent({
     required this.tileImage,
     required Vector2 size,
@@ -45,15 +54,16 @@ class FloorComponent extends PositionComponent with HasGameRef<BlinkRabbitGame>,
   Future<void> onLoad() async {
     await super.onLoad();
     add(RectangleHitbox());
+    // onLoad에서 캐싱
+    _tileScale = size.y / tileImage.height;
+    _tileTransform = Matrix4.diagonal3Values(_tileScale, _tileScale, 1);
+    _paint = Paint()
+      ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, _tileTransform.storage);
   }
 
   @override
   void render(Canvas canvas) {
-    final double tileScale = size.y / tileImage.height;
-    final Matrix4 tileTransform = Matrix4.diagonal3Values(tileScale, tileScale, 1);
-    final Paint paint = Paint()
-      ..shader = ui.ImageShader(tileImage, TileMode.repeated, TileMode.repeated, tileTransform.storage);
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), paint);
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _paint);
   }
 }
 
@@ -78,6 +88,7 @@ class RabbitComponent extends SpriteComponent with CollisionCallbacks, HasGameRe
   void update(double dt) {
     if (!gameRef.isGameStarted) return;
     super.update(dt);
+    // 토끼의 물리 계산: 매 프레임마다 중력, 위치, 회전을 업데이트합니다.
     velocity += BlinkRabbitGame.kGravity;
     position.y += velocity * BlinkRabbitGame.kRabbitVelocityMultiplier * 100;
     angle = velocity * BlinkRabbitGame.kRabbitRotationMultiplier;
@@ -117,7 +128,7 @@ class PipeComponent extends PositionComponent with CollisionCallbacks, HasGameRe
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    // 상단, 하단 영역에 대해 각각 히트박스를 추가합니다.
+    // 상단, 하단 영역에 대해 각각 Hitbox를 추가합니다.
     topHitbox = RectangleHitbox();
     bottomHitbox = RectangleHitbox();
     add(topHitbox);
@@ -127,17 +138,19 @@ class PipeComponent extends PositionComponent with CollisionCallbacks, HasGameRe
   @override
   void update(double dt) {
     super.update(dt);
+    // 화면 크기를 지역 변수에 저장하여 반복 연산 줄임
+    final double screenWidth = gameRef.size.x;
+    final double screenHeight = gameRef.size.y;
     relativeX -= gameRef.currentBarrierSpeed * dt;
-    position.x = (relativeX - 1.0) * gameRef.size.x;
+    position.x = (relativeX - 1.0) * screenWidth;
     if (relativeX < 1.0 - BlinkRabbitGame.kBarrierWidth) {
       gameRef.repositionPipe(this);
     }
-
-    // 매 프레임마다 파이프의 hitbox 크기와 위치를 업데이트합니다.
-    final double pipeWidth = gameRef.size.x * BlinkRabbitGame.kBarrierWidth;
-    final double topPipeHeight = gameRef.size.y * topHeight;
-    final double bottomY = gameRef.size.y * topHeight + gameRef.size.y * gap;
-    final double bottomPipeHeight = gameRef.size.y - bottomY;
+    // 파이프 관련 계산을 지역 변수로 미리 계산
+    final double pipeWidth = screenWidth * BlinkRabbitGame.kBarrierWidth;
+    final double topPipeHeight = screenHeight * topHeight;
+    final double bottomY = screenHeight * topHeight + screenHeight * gap;
+    final double bottomPipeHeight = screenHeight - bottomY;
 
     topHitbox
       ..size = Vector2(pipeWidth, topPipeHeight)
@@ -149,12 +162,19 @@ class PipeComponent extends PositionComponent with CollisionCallbacks, HasGameRe
 
   @override
   void render(Canvas canvas) {
-    final double pipeWidth = gameRef.size.x * BlinkRabbitGame.kBarrierWidth;
-    final double topPipeHeight = gameRef.size.y * topHeight;
+    // 렌더링 최적화: 파이프가 화면 밖(오른쪽 또는 왼쪽)에 있으면 렌더링 건너뜁니다.
+    final double screenWidth = gameRef.size.x;
+    if (position.x + size.x < 0 || position.x > screenWidth) {
+      return;
+    }
+
+    final double screenHeight = gameRef.size.y;
+    final double pipeWidth = screenWidth * BlinkRabbitGame.kBarrierWidth;
+    final double topPipeHeight = screenHeight * topHeight;
     final Rect topRect = Rect.fromLTWH(0, 0, pipeWidth, topPipeHeight);
     sprite.renderRect(canvas, topRect);
-    final double bottomY = gameRef.size.y * topHeight + gameRef.size.y * gap;
-    final double bottomHeight = gameRef.size.y - bottomY;
+    final double bottomY = screenHeight * topHeight + screenHeight * gap;
+    final double bottomHeight = screenHeight - bottomY;
     final Rect bottomRect = Rect.fromLTWH(0, bottomY, pipeWidth, bottomHeight);
     sprite.renderRect(canvas, bottomRect);
   }
@@ -168,12 +188,12 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
   static const double kGravity = 0.25;
   static const double kBarrierWidth = 0.2;
   static const double kBarrierSpeed = 0.2;
-  static const double kBarrierAcceleration = 0.001;
+  // 가속도를 높여 파이프 속도가 점점 빨라지도록 (예: 0.01)
+  static const double kBarrierAcceleration = 0.01;
   static const double kRabbitXCenter = 0.3;
   static const double kBarrierInitialX = 2.0;
   static const double kMaxRandomXOffset = 0.2;
   static const double kRabbitSize = 50;
-  static const double kRabbitHitboxHalfSize = 25; // 사용하지 않음.
   static const double kRabbitRotationMultiplier = 0.03;
   static const double kRabbitVelocityMultiplier = 0.02;
   static const double kCeilingFloorHeight = 40;
@@ -195,10 +215,10 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
 
   final math.Random _random = math.Random();
 
-  // 오브젝트 풀: 파이프들을 재사용하기 위한 리스트
+  // 오브젝트 풀: 파이프 재사용을 위한 리스트
   final List<PipeComponent> _pipePool = [];
 
-  // 외부(UI)에서 설정할 수 있는 콜백들
+  // 외부(UI)에서 설정 가능한 콜백들
   VoidCallback? onScoreChanged;
   VoidCallback? onGameOver;
 
@@ -240,7 +260,7 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     super.onGameResize(canvasSize);
   }
 
-  /// 게임 시작 시, 파이프 오브젝트 풀을 이용해 파이프를 생성하거나 재설정합니다.
+  /// 게임 시작 시, 파이프 오브젝트 풀을 이용해 파이프를 생성 또는 재설정합니다.
   void startGame() {
     isGameStarted = true;
     isGameOver = false;
@@ -253,7 +273,7 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
       int pipeCount = 5;
       for (int i = 0; i < pipeCount; i++) {
         double relX = _nextPipeX;
-        _nextPipeX = relX + kPipeSpacing + (_random.nextDouble() * kMaxRandomXOffset);
+        _nextPipeX = relX + kPipeSpacing; // 무작위 오프셋 제거
         double topH = 0.2 + _random.nextDouble() * 0.4;
         double gap = 0.25 + _random.nextDouble() * 0.1;
         Vector2 pipeSize = Vector2(size.x * kBarrierWidth, size.y);
@@ -270,7 +290,7 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     } else {
       for (var pipe in _pipePool) {
         double relX = _nextPipeX;
-        _nextPipeX = relX + kPipeSpacing + (_random.nextDouble() * kMaxRandomXOffset);
+        _nextPipeX = relX + kPipeSpacing; // 무작위 오프셋 제거
         pipe.relativeX = relX;
         pipe.topHeight = 0.2 + _random.nextDouble() * 0.4;
         pipe.gap = 0.25 + _random.nextDouble() * 0.1;
@@ -284,8 +304,10 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
 
   /// 파이프가 화면 왼쪽으로 벗어나면 재설정합니다.
   void repositionPipe(PipeComponent pipe) {
-    pipe.relativeX = _nextPipeX;
-    _nextPipeX = pipe.relativeX + kPipeSpacing + (_random.nextDouble() * kMaxRandomXOffset);
+    // _pipePool 내 가장 오른쪽 파이프의 relativeX를 기준으로 재배치
+    double maxRelativeX = _pipePool.map((p) => p.relativeX).reduce(math.max);
+    pipe.relativeX = maxRelativeX + kPipeSpacing;
+    _nextPipeX = pipe.relativeX + kPipeSpacing;
     pipe.topHeight = 0.2 + _random.nextDouble() * 0.4;
     pipe.gap = 0.25 + _random.nextDouble() * 0.1;
   }
@@ -302,6 +324,7 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
       onScoreChanged?.call();
     }
 
+    // 매 프레임 파이프 속도가 증가하도록 업데이트합니다.
     currentBarrierSpeed += kBarrierAcceleration * dt;
   }
 
