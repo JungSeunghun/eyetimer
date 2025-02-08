@@ -259,11 +259,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
-      // 하단에 애드몹 배너광고를 고정된 높이로 추가하여 콘텐츠를 가리지 않도록 함.
-      bottomNavigationBar: SizedBox(
-        height: AdSize.banner.height.toDouble(),
-        child: const GoogleBannerAdWidget(),
-      ),
     );
   }
 }

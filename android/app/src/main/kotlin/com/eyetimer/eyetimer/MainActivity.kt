@@ -1,4 +1,4 @@
-package com.example.eyetimer
+package com.eyetimer.eyetimer
 
 import io.flutter.embedding.android.FlutterActivity
 

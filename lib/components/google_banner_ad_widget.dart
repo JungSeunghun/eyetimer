@@ -8,7 +8,7 @@ String getBannerAdUnitId() {
   if (Platform.isAndroid) {
     return kDebugMode
         ? 'ca-app-pub-3940256099942544/6300978111'  // Android 테스트용 배너 ID
-        : 'YOUR_ANDROID_PRODUCTION_AD_UNIT_ID';       // Android 프로덕션 광고 단위 ID
+        : 'ca-app-pub-3357808033770699/9252225989';       // Android 프로덕션 광고 단위 ID
   } else if (Platform.isIOS) {
     return kDebugMode
         ? 'ca-app-pub-3940256099942544/2934735716'  // iOS 테스트용 배너 ID
