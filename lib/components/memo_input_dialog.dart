@@ -6,7 +6,7 @@ class MemoInputScreen extends StatefulWidget {
   final String? initialMemo;
   final String photoPath; // 사진 경로
   final bool isEditing;
-  final VoidCallback? onDelete;
+  final Future<void> Function()? onDelete; // Future<void>로 변경
 
   const MemoInputScreen({
     Key? key,
@@ -78,9 +78,12 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
         );
       },
     );
+
     if (confirm == true) {
-      widget.onDelete?.call();
-      Navigator.pop(context);
+      if (widget.onDelete != null) {
+        await widget.onDelete!(); // 삭제 작업을 await
+      }
+      Navigator.pop(context, "deleted"); // 삭제 완료 결과 전달
     }
   }
 

@@ -43,7 +43,10 @@ class _MainLayoutState extends State<MainLayout> {
       },
       child: Scaffold(
         appBar: CustomAppBar(),
-        body: _screens[_currentIndex],
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
         bottomNavigationBar: CustomBottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {

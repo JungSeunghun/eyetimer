@@ -57,6 +57,10 @@ class MyForegroundTaskHandler extends TaskHandler {
     await _loadTranslations();
     await _playSoundNotification();
     _updateNotification();
+
+    // 타이머가 시작되자마자 UI에 초기 타이머 값을 전송하여 딜레이 없이 표시되도록 함.
+    final sendPort = IsolateNameServer.lookupPortByName("timer_port");
+    sendPort?.send(currentDuration.inSeconds);
   }
 
   @override
