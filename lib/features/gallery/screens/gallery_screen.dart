@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../../components/memo_input_dialog.dart';
 import '../../../models/photo.dart';
 import '../../../providers/photo_provider.dart';
@@ -23,10 +24,10 @@ class GalleryScreen extends StatelessWidget {
 
         return Scaffold(
           body: groupedPhotos.isEmpty
-              ? const Center(
+              ? Center(
             child: Text(
-              '아직 찍은 사진이 없습니다.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              'no_photos_gallery_message'.tr(), // easy_localization 적용
+              style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
           )
               : ListView.builder(
@@ -126,7 +127,7 @@ class GalleryScreen extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: Colors.black.withOpacity(0.6),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -139,7 +140,7 @@ class GalleryScreen extends StatelessWidget {
         if (photo.memo != null && photo.memo!.isNotEmpty)
           Center(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withOpacity(0.5),
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 photo.memo!,
