@@ -3,19 +3,16 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../audio_player_task.dart';
 import '../../../components/google_banner_ad_widget.dart';
+import '../../../timer_notification.dart'; // 네이티브 호출용 클래스
 import '../components/control_buttons.dart';
 import '../components/duration_picker_dialog.dart';
 import '../../../components/memo_input_dialog.dart';
@@ -25,12 +22,6 @@ import '../components/timer_display.dart';
 import '../../../models/photo.dart';
 import '../../../providers/photo_provider.dart';
 import '../../../services/photo_service.dart';
-import '../../../my_foreground_task_handler.dart';
-
-@pragma('vm:entry-point')
-void startCallback() {
-  FlutterForegroundTask.setTaskHandler(MyForegroundTaskHandler());
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,9 +42,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Duration breakDuration = const Duration(minutes: 5);
   Duration currentDuration = const Duration(minutes: 20);
 
-  // Foreground Service 상태
-  bool isServiceRunning = false;
+  // 타이머 실행 상태
+  bool isTimerRunning = false;
   bool isPaused = false;
+  bool isFocusMode = true; // 집중모드 여부 (true: 집중, false: 휴식)
+
+  // 타이머 periodic 인스턴스를 저장할 변수
+  Timer? _timer;
+
+  // 번역 키 getters (기존)
+  String get focus_title => 'focus_title'.tr();
+  String get break_title => 'break_title'.tr();
+  String get focusModeText => 'focus_mode_text'.tr();
+  String get breakModeText => 'break_mode_text'.tr();
+
+  // 번역 키 getters for title
+  String get pauseTitle => 'pause_title'.tr();          // 예: "일시정지"
+  String get resumeTitle => 'resume_title'.tr();        // 예: "재개"
+
 
   // 사진 관련 변수들
   final PhotoService _photoService = PhotoService();
@@ -61,11 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Photo> todayPhotos = [];
   final PageController _pageController = PageController(viewportFraction: 1.0);
 
-  late FlutterLocalNotificationsPlugin _notificationsPlugin;
   StreamSubscription<dynamic>? _taskDataSubscription;
   late ReceivePort _receivePort;
-
-  AudioHandler? _audioHandler;
 
   @override
   void initState() {
@@ -89,8 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _taskDataSubscription?.cancel();
     IsolateNameServer.removePortNameMapping("timer_port");
-    FlutterForegroundTask.stopService();
-    _stopWhiteNoise();
+    _stopTimerNotification();
     super.dispose();
   }
 
@@ -172,148 +174,124 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 백색소음 제목도 번역 키를 사용하도록 변경 (BuildContext 전달)
-  String _getWhiteNoiseTitle(BuildContext context, String assetPath) {
-    if (assetPath.contains('rain')) return 'white_noise_rain'.tr();
-    if (assetPath.contains('ocean')) return 'white_noise_ocean'.tr();
-    if (assetPath.contains('wind')) return 'white_noise_wind'.tr();
-    return 'white_noise_default'.tr();
-  }
-
-  Future<void> _startWhiteNoise(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    final assetPath = prefs.getString('white_noise_asset') ?? '';
-    if (assetPath.isEmpty) {
-      return;
-    }
-    if (_audioHandler == null) {
-      _audioHandler = await AudioService.init(
-        builder: () => MyAudioHandler(),
-        config: AudioServiceConfig(
-          androidNotificationChannelId: 'white_noise_channel',
-          androidNotificationChannelName: '백색소음 재생',
-          androidNotificationChannelDescription: '백색소음 재생 서비스',
-          notificationColor: const Color(0xFF2196f3),
-          androidNotificationIcon: 'mipmap/launcher_icon',
-        ),
-      );
-    }
-    final currentMediaItem = _audioHandler!.mediaItem.value;
-    if (currentMediaItem == null || currentMediaItem.id != assetPath) {
-      final mediaItem = MediaItem(
-        id: assetPath,
-        album: "White Noise",
-        title: _getWhiteNoiseTitle(context, assetPath),
-      );
-      await _audioHandler!.updateMediaItem(mediaItem);
-    }
-    await _audioHandler!.play();
-  }
-
-  Future<void> _pauseWhiteNoise() async {
-    if (_audioHandler != null &&
-        _audioHandler!.playbackState.value.processingState != AudioProcessingState.idle) {
-      await _audioHandler!.pause();
-    }
-  }
-
-  Future<void> _resumeWhiteNoise() async {
-    if (_audioHandler != null &&
-        _audioHandler!.playbackState.value.processingState != AudioProcessingState.idle) {
-      await _audioHandler!.play();
-    }
-  }
-
-  Future<void> _stopWhiteNoise() async {
-    if (_audioHandler != null &&
-        _audioHandler!.playbackState.value.processingState != AudioProcessingState.idle) {
-      await _audioHandler!.stop();
-    }
-  }
-
-  // _getNotificationMessage 함수는 번역 키를 이용하여 메시지를 반환합니다.
-  String _getNotificationMessage(Duration duration) {
+// 번역 키를 이용해 알림 메시지를 생성합니다.
+// isFocusMode가 true이면 집중 모드 템플릿을, false이면 휴식 모드 템플릿을 사용합니다.
+  String _getNotificationMessage(Duration duration, {required bool isFocusMode}) {
     final minutes = duration.inMinutes.toString();
     final seconds = (duration.inSeconds % 60).toString();
-    if (int.parse(seconds) > 0) {
-      return 'notification_template_with_seconds'.tr(namedArgs: {
-        'minutes': minutes,
-        'seconds' : seconds
-      });
+
+    String key;
+    if (isFocusMode) {
+      key = int.parse(seconds) > 0
+          ? 'notification_template_with_seconds'
+          : 'notification_template_without_seconds';
     } else {
-      return 'notification_template_without_seconds'.tr(namedArgs: {
-        'minutes': minutes,
-      });
+      key = int.parse(seconds) > 0
+          ? 'break_notification_template_with_seconds'
+          : 'break_notification_template_without_seconds';
     }
+
+    return int.parse(seconds) > 0
+        ? key.tr(namedArgs: {
+      'minutes': minutes,
+      'seconds': seconds,
+    })
+        : key.tr(namedArgs: {
+      'minutes': minutes,
+    });
   }
 
-  void _startForegroundService() async {
-    if (isServiceRunning) return;
-    await FlutterForegroundTask.startService(
-      notificationTitle: 'focus_title'.tr(),
-      notificationText: _getNotificationMessage(currentDuration),
-      callback: startCallback,
+  void _startTimerNotification() async {
+    if (isTimerRunning) return;
+    String title = isFocusMode ? focus_title : break_title;
+    String message = _getNotificationMessage(currentDuration, isFocusMode: isFocusMode);
+    await TimerNotification.startTimer(title, message);
+    setState(() {
+      isTimerRunning = true;
+      isPaused = false;
+    });
+  }
+
+  /// 타이머 알림 업데이트 (매초 호출, title 및 메시지 포함)
+  void _updateTimerNotification() async {
+    if (!isTimerRunning || isPaused) return;
+    String title = isFocusMode ? focus_title : break_title;
+    String message = _getNotificationMessage(
+        currentDuration,
+        isFocusMode: isFocusMode
     );
-    setState(() {
-      isServiceRunning = true;
-      isPaused = false;
-    });
-    await _startWhiteNoise(context);
+    await TimerNotification.updateTimer(title, message);
   }
 
-  void _pauseForegroundService() {
-    if (!isServiceRunning || isPaused) return;
-    FlutterForegroundTask.sendDataToTask('pause');
+  /// 타이머 알림 종료
+  void _stopTimerNotification() async {
+    if (!isTimerRunning) return;
+    await TimerNotification.endTimer();
     setState(() {
-      isPaused = true;
-    });
-    _pauseWhiteNoise();
-  }
-
-  void _resumeForegroundService() {
-    if (!isServiceRunning || !isPaused) return;
-    FlutterForegroundTask.sendDataToTask('resume');
-    setState(() {
-      isPaused = false;
-    });
-    _resumeWhiteNoise();
-  }
-
-  void _stopForegroundService() async {
-    if (!isServiceRunning) return;
-    await FlutterForegroundTask.stopService();
-    setState(() {
-      isServiceRunning = false;
+      isFocusMode = true;
+      isTimerRunning = false;
       isPaused = false;
       currentDuration = focusDuration;
     });
-    await _stopWhiteNoise();
+    _timer?.cancel();
+    _timer = null;
   }
 
-  void _showDurationPickerDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => DurationPickerDialog(
-        focusDuration: focusDuration,
-        breakDuration: breakDuration,
-        onSave: (newFocusDuration, newBreakDuration) {
-          setState(() {
-            focusDuration = newFocusDuration;
-            breakDuration = newBreakDuration;
-            currentDuration = focusDuration;
-          });
-          _saveDurations();
-        },
-      ),
+  /// 타이머 일시정지 (플랫폼 네이티브 호출, title 및 메시지 포함)
+  void _pauseTimer() async {
+    if (!isTimerRunning || isPaused) return;
+    setState(() {
+      isPaused = true;
+    });
+    String title = pauseTitle;
+    String message = _getNotificationMessage(
+        currentDuration,
+        isFocusMode: isFocusMode
     );
+    await TimerNotification.pauseTimer(title, message);
   }
 
-  // 번역 키를 사용하는 getter들
-  String get focusModeText => 'focus_mode_text'.tr();
-  String get breakModeText => 'break_mode_text'.tr();
-  String get noPhotosMessage => 'no_photos_message'.tr();
-  String get beforeStartText => 'before_start_text'.tr();
-  String get focusTitle => 'focus_title'.tr();
+  /// 타이머 재개 (플랫폼 네이티브 호출, title 및 메시지 포함)
+  void _resumeTimer() async {
+    if (!isTimerRunning || !isPaused) return;
+    setState(() {
+      isPaused = false;
+    });
+    String title = resumeTitle;
+    String message = 'timer_resumed'.tr();
+    await TimerNotification.resumeTimer(title, message);
+  }
+
+  /// Flutter에서 타이머 실행: 매초 업데이트하며, 집중/휴식 모드를 반복합니다.
+  void _startTimer() {
+    _startTimerNotification();
+    // 타이머가 이미 실행 중이면 새 타이머를 생성하지 않음
+    if (_timer != null) return;
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      if (isTimerRunning && !isPaused) {
+        if (currentDuration.inSeconds > 0) {
+          setState(() {
+            currentDuration -= Duration(seconds: 1);
+          });
+          _updateTimerNotification();
+        } else {
+          // 현재 모드의 시간이 끝났으므로 모드를 전환합니다.
+          setState(() {
+            isFocusMode = !isFocusMode;
+            // 새로운 모드에 따라 타이머 시간을 재설정합니다.
+            currentDuration = isFocusMode ? focusDuration : breakDuration;
+          });
+          // 전환된 모드의 제목과 메시지를 생성하여 네이티브에 업데이트 명령을 전달합니다.
+          String title = isFocusMode ? focus_title : break_title;
+          String message = _getNotificationMessage(
+              focusDuration,
+              isFocusMode: isFocusMode
+          );
+          TimerNotification.switchTimer(title, message);
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -332,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
               PhotoSlider(
                 todayPhotos: photoProvider.todayPhotos,
                 pageController: _pageController,
-                noPhotosMessage: noPhotosMessage,
+                noPhotosMessage: 'no_photos_message'.tr(),
                 textColor: textColor,
                 onEditMemo: (Photo photo, String updatedMemo) {
                   photoProvider.updatePhotoMemo(photo.id!, updatedMemo);
@@ -347,37 +325,51 @@ class _HomeScreenState extends State<HomeScreen> {
               TimerDisplay(
                 currentDuration: currentDuration,
                 textColor: textColor,
-                onSettingsPressed: () => _showDurationPickerDialog(context),
+                onSettingsPressed: () => showDialog(
+                  context: context,
+                  builder: (context) => DurationPickerDialog(
+                    focusDuration: focusDuration,
+                    breakDuration: breakDuration,
+                    onSave: (newFocusDuration, newBreakDuration) {
+                      setState(() {
+                        focusDuration = newFocusDuration;
+                        breakDuration = newBreakDuration;
+                        currentDuration = focusDuration;
+                        isFocusMode = true; // 기본 집중모드로 재설정
+                      });
+                      _saveDurations();
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 16.0),
               StatusText(
-                isRunning: isServiceRunning,
-                isFocusMode: true,
+                isRunning: isTimerRunning,
+                isFocusMode: isFocusMode,
                 focusModeText: focusModeText,
                 breakModeText: breakModeText,
-                beforeStartText: beforeStartText,
+                beforeStartText: 'before_start_text'.tr(),
                 textColor: textColor,
               ),
               const SizedBox(height: 32.0),
               ControlButtons(
-                isRunning: isServiceRunning,
+                isRunning: isTimerRunning,
                 isPaused: isPaused,
                 onPlay: () {
-                  if (isServiceRunning && isPaused) {
-                    _resumeForegroundService();
+                  if (isTimerRunning && isPaused) {
+                    _resumeTimer();
                   } else {
-                    _startForegroundService();
+                    _startTimer();
                   }
                 },
-                onPause: _pauseForegroundService,
-                onStop: _stopForegroundService,
+                onPause: _pauseTimer,
+                onStop: _stopTimerNotification,
                 onTakePhoto: takePhoto,
               ),
             ],
           ),
         ),
       ),
-      // 하단에 애드몹 배너광고를 고정된 높이로 추가하여 콘텐츠를 가리지 않도록 함.
       bottomNavigationBar: SizedBox(
         height: AdSize.banner.height.toDouble(),
         child: const GoogleBannerAdWidget(),
