@@ -6,6 +6,7 @@
   "no_photos_message": "Record photos of the scenery from afar.",
   "before_start_text": "Soon, rest your eyes by gazing into the distance.",
   "focus_title": "Focus Time",
+  "pause_title": "Pause",
   "notification_template_with_seconds": "{minutes} minutes {seconds} seconds later, we will remind you to relax your eyes.",
   "notification_template_without_seconds": "{minutes} minutes later, we will remind you to relax your eyes.",
   "white_noise_rain": "Rain sound",
