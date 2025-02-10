@@ -6,6 +6,7 @@ import '../components/custom_app_bar.dart';
 import '../components/custom_bottom_navigation_bar.dart';
 import '../features/exercise/screens/exercise_screen.dart';
 import '../features/gallery/screens/gallery_screen.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({Key? key}) : super(key: key);
@@ -34,6 +35,22 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
+  /// 현재 인덱스에 따른 스크린 타이틀 반환
+  String _getScreenTitle(BuildContext context) {
+    switch (_currentIndex) {
+      case 0:
+        return 'bottom_nav_timer'.tr();
+      case 1:
+        return 'bottom_nav_gallery'.tr();
+      case 2:
+        return 'bottom_nav_exercise'.tr();
+      case 3:
+        return 'bottom_nav_eye_record'.tr();
+      default:
+        return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -42,7 +59,7 @@ class _MainLayoutState extends State<MainLayout> {
         await _handleBackButton();
       },
       child: Scaffold(
-        appBar: CustomAppBar(),
+        appBar: CustomAppBar(title: _getScreenTitle(context)),
         body: IndexedStack(
           index: _currentIndex,
           children: _screens,

@@ -66,7 +66,7 @@ class PhotoSlider extends StatelessWidget {
           // 전체에 반투명 박스 씌우기
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
             ),
           ),
           // 메시지 표시
@@ -78,7 +78,7 @@ class PhotoSlider extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: FontWeight.bold,
                   height: 1.8,
                   color: Colors.white,
                 ),

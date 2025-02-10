@@ -38,7 +38,6 @@ class TimerDisplay extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8.0),
         Align(
           alignment: Alignment.center,
           child: IconButton(

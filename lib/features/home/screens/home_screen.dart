@@ -34,6 +34,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   // SharedPreferences 키
   static const String focusDurationMinutesKey = 'focusDuration_minutes';
   static const String focusDurationSecondsKey = 'focusDuration_seconds';
@@ -94,10 +96,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // 별도의 async 함수 호출하여 MyAudioHandler 초기화
     _initAudioHandler();
+
+    // 화면이 완전히 렌더링된 후에 스크롤을 맨 아래로 이동
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _taskDataSubscription?.cancel();
     IsolateNameServer.removePortNameMapping("timer_port");
     _stopTimerNotification();
@@ -390,6 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: SingleChildScrollView(
+        controller: _scrollController, // ScrollController 적용
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -459,10 +470,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: SizedBox(
-        height: AdSize.banner.height.toDouble(),
-        child: const GoogleBannerAdWidget(),
-      ),
+      // bottomNavigationBar: SizedBox(
+      //   height: AdSize.banner.height.toDouble(),
+      //   child: const GoogleBannerAdWidget(),
+      // ),
     );
   }
 }

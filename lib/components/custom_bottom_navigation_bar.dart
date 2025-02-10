@@ -23,7 +23,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
       elevation: 0,
       currentIndex: currentIndex,
       selectedItemColor: textColor, // 선택된 아이템 색상
-      unselectedItemColor: textColor.withOpacity(0.5), // 선택되지 않은 아이템 색상
+      unselectedItemColor: textColor.withValues(alpha: 0.5), // 선택되지 않은 아이템 색상
       onTap: onTap,
       items: [
         BottomNavigationBarItem(
