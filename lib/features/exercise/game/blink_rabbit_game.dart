@@ -184,8 +184,8 @@ class PipeComponent extends PositionComponent with CollisionCallbacks, HasGameRe
 /// Flame의 충돌 시스템을 활성화합니다.
 class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection {
   // 상수들 (픽셀 및 상대 좌표)
-  static const double kJumpForce = -3.5;
-  static const double kGravity = 0.25;
+  static const double kJumpForce = -2.5;
+  static const double kGravity = 0.15;
   static const double kBarrierWidth = 0.2;
   static const double kBarrierSpeed = 0.2;
   // 가속도를 높여 파이프 속도가 점점 빨라지도록 (예: 0.01)
@@ -328,10 +328,10 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     currentBarrierSpeed += kBarrierAcceleration * dt;
   }
 
-  @override
-  void onTapDown(TapDownInfo info) {
-    onBlink();
-  }
+  // @override
+  // void onTapDown(TapDownInfo info) {
+  //   onBlink();
+  // }
 
   /// 토끼의 점프를 유도합니다.
   void onBlink() {

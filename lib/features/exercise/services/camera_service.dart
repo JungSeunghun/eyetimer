@@ -44,7 +44,7 @@ Uint8List convertYUV420toNV21Isolate(Map<String, dynamic> data) {
 }
 
 class CameraService {
-  static const double kEyeOpenThreshold = 0.3;
+  static const double kEyeOpenThreshold = 0.25;
   static const int kBlinkCooldownMs = 100;
 
   cam.CameraController? _cameraController;
@@ -53,6 +53,7 @@ class CameraService {
   late FaceDetector _faceDetector;
 
   DateTime _lastBlinkTime = DateTime.now();
+  DateTime _lastFaceDetectionTime = DateTime.now();
 
   cam.CameraController? get cameraController => _cameraController;
 
@@ -63,7 +64,7 @@ class CameraService {
       options: FaceDetectorOptions(
         enableClassification: true,
         enableTracking: true,
-        performanceMode: FaceDetectorMode.accurate,
+        performanceMode: FaceDetectorMode.fast,
         minFaceSize: 0.3,
       ),
     );
@@ -87,7 +88,7 @@ class CameraService {
 
     _cameraController = cam.CameraController(
       frontCamera,
-      cam.ResolutionPreset.high, // 해상도를 낮추면 부담이 줄어듭니다.
+      cam.ResolutionPreset.high, // 낮은 해상도 사용
       enableAudio: false,
     );
 
@@ -95,6 +96,11 @@ class CameraService {
       await _cameraController!.initialize();
       isCameraInitialized = true;
       await _cameraController!.startImageStream((cam.CameraImage image) {
+        // 얼굴 인식 호출 주기를 제한 (예: 200ms)
+        final now = DateTime.now();
+        if (now.difference(_lastFaceDetectionTime).inMilliseconds < 200) return;
+        _lastFaceDetectionTime = now;
+
         if (_isDetecting) return;
         _isDetecting = true;
         _detectFacesOnFrame(image).then((faces) {
