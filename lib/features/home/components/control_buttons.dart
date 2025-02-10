@@ -73,7 +73,7 @@ class ControlButtons extends StatelessWidget {
             padding: const EdgeInsets.all(8),
           ),
           child: Icon(
-            Icons.photo_camera_rounded,
+            Icons.photo_camera_outlined,
             size: 32,
             color: textColor,
           ),
