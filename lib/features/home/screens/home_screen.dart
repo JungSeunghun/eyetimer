@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -10,7 +11,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as path;
 
+import '../../../audio_player_task.dart';
 import '../../../components/google_banner_ad_widget.dart';
 import '../../../timer_notification.dart'; // 네이티브 호출용 클래스
 import '../components/control_buttons.dart';
@@ -60,7 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String get pauseTitle => 'pause_title'.tr();          // 예: "일시정지"
   String get resumeTitle => 'resume_title'.tr();        // 예: "재개"
 
-
   // 사진 관련 변수들
   final PhotoService _photoService = PhotoService();
   final ImagePicker _picker = ImagePicker();
@@ -69,6 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   StreamSubscription<dynamic>? _taskDataSubscription;
   late ReceivePort _receivePort;
+
+  // MyAudioHandler 인스턴스 추가 (화이트노이즈 제어용)
+  late final MyAudioHandler _audioHandler;
 
   @override
   void initState() {
@@ -86,6 +91,9 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     });
+
+    // 별도의 async 함수 호출하여 MyAudioHandler 초기화
+    _initAudioHandler();
   }
 
   @override
@@ -93,7 +101,86 @@ class _HomeScreenState extends State<HomeScreen> {
     _taskDataSubscription?.cancel();
     IsolateNameServer.removePortNameMapping("timer_port");
     _stopTimerNotification();
+    _stopWhiteNoise();
     super.dispose();
+  }
+
+  Future<void> _initAudioHandler() async {
+    _audioHandler = await AudioService.init(
+      builder: () => MyAudioHandler(),
+      config: AudioServiceConfig(
+        androidNotificationChannelId: 'white_noise_channel',
+        androidNotificationChannelName: 'white_noise_channel_name',
+        androidNotificationChannelDescription: 'white_noise_channel_service',
+        androidNotificationIcon: 'mipmap/launcher_icon',
+        androidNotificationOngoing: true,
+      ),
+    );
+  }
+
+  Future<void> _playWhiteNoise() async {
+    final prefs = await SharedPreferences.getInstance();
+    final asset = prefs.getString('white_noise_asset') ?? '';
+    if (asset.isNotEmpty) {
+      // _audioHandler가 아직 초기화되지 않았다면 초기화 대기
+      if (_audioHandler == null) {
+        await _initAudioHandler();
+      }
+      // asset 예: "assets/sounds/rain.mp3"
+      // 파일 이름("rain.mp3")과 확장자를 제거한 이름("rain") 추출
+      final fileName = path.basename(asset);
+      final baseName = path.basenameWithoutExtension(fileName).toLowerCase();
+
+      // 파일명에 따른 localization 적용
+      String localizedTitle;
+      switch (baseName) {
+        case 'rain':
+          localizedTitle = 'white_noise_rain'.tr();
+          break;
+        case 'ocean':
+          localizedTitle = 'white_noise_ocean'.tr();
+          break;
+        case 'wind':
+          localizedTitle = 'white_noise_wind'.tr();
+          break;
+        default:
+          localizedTitle = baseName; // 해당하는 localization 키가 없으면 기본 파일명을 사용
+          break;
+      }
+
+      final mediaItem = MediaItem(
+        id: asset,
+        album: 'White Noise',
+        title: localizedTitle, // localization 적용된 타이틀 사용
+      );
+      await _audioHandler.updateMediaItem(mediaItem);
+      await _audioHandler.play();
+    }
+  }
+
+
+  Future<void> _pauseWhiteNoise() async {
+    final prefs = await SharedPreferences.getInstance();
+    final asset = prefs.getString('white_noise_asset') ?? '';
+    if (asset.isNotEmpty) {
+      await _audioHandler.pause();
+    }
+  }
+
+  Future<void> _resumeWhiteNoise() async {
+    final prefs = await SharedPreferences.getInstance();
+    final asset = prefs.getString('white_noise_asset') ?? '';
+    if (asset.isNotEmpty) {
+      await _audioHandler.play();
+    }
+  }
+
+  Future<void> _stopWhiteNoise() async {
+    final prefs = await SharedPreferences.getInstance();
+    final asset = prefs.getString('white_noise_asset') ?? '';
+    if (asset.isNotEmpty) {
+      await _audioHandler.stop();
+    }
   }
 
   Future<void> _loadDurations() async {
@@ -174,8 +261,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-// 번역 키를 이용해 알림 메시지를 생성합니다.
-// isFocusMode가 true이면 집중 모드 템플릿을, false이면 휴식 모드 템플릿을 사용합니다.
   String _getNotificationMessage(Duration duration, {required bool isFocusMode}) {
     final minutes = duration.inMinutes.toString();
     final seconds = (duration.inSeconds % 60).toString();
@@ -205,7 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (isTimerRunning) return;
     String title = isFocusMode ? focus_title : break_title;
     String message = _getNotificationMessage(currentDuration, isFocusMode: isFocusMode);
-    await TimerNotification.startTimer(title, message);
+    TimerNotification.startTimer(title, message);
     setState(() {
       isTimerRunning = true;
       isPaused = false;
@@ -220,13 +305,13 @@ class _HomeScreenState extends State<HomeScreen> {
         currentDuration,
         isFocusMode: isFocusMode
     );
-    await TimerNotification.updateTimer(title, message);
+    TimerNotification.updateTimer(title, message);
   }
 
   /// 타이머 알림 종료
   void _stopTimerNotification() async {
     if (!isTimerRunning) return;
-    await TimerNotification.endTimer();
+    TimerNotification.endTimer();
     setState(() {
       isFocusMode = true;
       isTimerRunning = false;
@@ -235,6 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _timer?.cancel();
     _timer = null;
+    _stopWhiteNoise();
   }
 
   /// 타이머 일시정지 (플랫폼 네이티브 호출, title 및 메시지 포함)
@@ -248,7 +334,8 @@ class _HomeScreenState extends State<HomeScreen> {
         currentDuration,
         isFocusMode: isFocusMode
     );
-    await TimerNotification.pauseTimer(title, message);
+    TimerNotification.pauseTimer(title, message);
+    _pauseWhiteNoise();
   }
 
   /// 타이머 재개 (플랫폼 네이티브 호출, title 및 메시지 포함)
@@ -259,12 +346,14 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     String title = resumeTitle;
     String message = 'timer_resumed'.tr();
-    await TimerNotification.resumeTimer(title, message);
+    TimerNotification.resumeTimer(title, message);
+    _resumeWhiteNoise();
   }
 
   /// Flutter에서 타이머 실행: 매초 업데이트하며, 집중/휴식 모드를 반복합니다.
   void _startTimer() {
     _startTimerNotification();
+    _playWhiteNoise(); //
     // 타이머가 이미 실행 중이면 새 타이머를 생성하지 않음
     if (_timer != null) return;
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
