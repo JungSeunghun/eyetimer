@@ -36,7 +36,7 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final backgroundColor = theme.scaffoldBackgroundColor; // AlertDialog 기본 배경색
+    final backgroundColor = theme.scaffoldBackgroundColor;
 
     return AlertDialog(
       backgroundColor: backgroundColor,
@@ -106,6 +106,7 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
         ),
         const SizedBox(height: 8),
+        // 분 입력 Row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -116,9 +117,42 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
               },
               splashRadius: 20,
             ),
-            Text(
-              '$minutes ${'minute'.tr()}',
-              style: TextStyle(fontSize: 18, color: textColor),
+            SizedBox(
+              width: 80,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  textSelectionTheme: TextSelectionThemeData(
+                    cursorColor: textColor,
+                    selectionColor: textColor.withOpacity(0.5),
+                    selectionHandleColor: textColor,
+                  ),
+                ),
+                child: TextFormField(
+                  initialValue: minutes.toString(),
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: textColor),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    border: UnderlineInputBorder(
+                      borderSide: BorderSide(color: textColor),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: textColor),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: textColor),
+                    ),
+                    suffixText: ' ${'minute'.tr()}',
+                  ),
+                  onFieldSubmitted: (value) {
+                    final newVal = int.tryParse(value);
+                    if (newVal != null) onMinutesChanged(newVal);
+                  },
+                  cursorColor: textColor,
+                ),
+              ),
             ),
             IconButton(
               icon: Icon(Icons.add, color: textColor),
@@ -129,6 +163,7 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             ),
           ],
         ),
+        // 초 입력 Row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -139,9 +174,42 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
               },
               splashRadius: 20,
             ),
-            Text(
-              '$seconds ${'second'.tr()}',
-              style: TextStyle(fontSize: 18, color: textColor),
+            SizedBox(
+              width: 80,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  textSelectionTheme: TextSelectionThemeData(
+                    cursorColor: textColor,
+                    selectionColor: textColor.withOpacity(0.5),
+                    selectionHandleColor: textColor,
+                  ),
+                ),
+                child: TextFormField(
+                  initialValue: seconds.toString(),
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 18, color: textColor),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                    border: UnderlineInputBorder(
+                      borderSide: BorderSide(color: textColor),
+                    ),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: textColor),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: textColor),
+                    ),
+                    suffixText: ' ${'second'.tr()}',
+                  ),
+                  onFieldSubmitted: (value) {
+                    final newVal = int.tryParse(value);
+                    if (newVal != null) onSecondsChanged(newVal);
+                  },
+                  cursorColor: textColor,
+                ),
+              ),
             ),
             IconButton(
               icon: Icon(Icons.add, color: textColor),

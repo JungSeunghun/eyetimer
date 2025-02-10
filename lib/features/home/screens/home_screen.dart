@@ -470,10 +470,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      // bottomNavigationBar: SizedBox(
-      //   height: AdSize.banner.height.toDouble(),
-      //   child: const GoogleBannerAdWidget(),
-      // ),
+      bottomNavigationBar: SizedBox(
+        height: AdSize.banner.height.toDouble(),
+        child: const GoogleBannerAdWidget(),
+      ),
     );
   }
 }
