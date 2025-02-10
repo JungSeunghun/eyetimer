@@ -114,11 +114,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: Text('cancel'.tr()),
+                          child: Text(
+                            'cancel'.tr(),
+                            style: TextStyle(color: textColor),
+                          ),
                         ),
-                        ElevatedButton(
+                        TextButton(
                           onPressed: () => Navigator.pop(context, true),
-                          child: Text('delete'.tr()),
+                          child: Text(
+                            'delete'.tr(),
+                            style: TextStyle(color: Colors.red),
+                          ),
                         ),
                       ],
                     ),
@@ -185,19 +191,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       body: Padding(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'profile.vision_record'.tr(),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
             const SizedBox(height: 12),
             Expanded(
               child: _visionList.isEmpty

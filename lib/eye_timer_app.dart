@@ -105,6 +105,7 @@ class _EyeTimerAppState extends State<EyeTimerApp>
         );
 
         return MaterialApp.router(
+          debugShowCheckedModeBanner: false,
           routerConfig: _router,
           title: 'Eye Timer',
           theme: interpolatedTheme,
