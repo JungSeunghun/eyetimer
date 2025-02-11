@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flame/game.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -213,6 +214,8 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
       canPop: false,
       onPopInvokedWithResult: (bool popResult, dynamic result) {
         Future.microtask(() async {
+          FlameAudio.bgm.stop();
+          FlameAudio.bgm.dispose();
           // 이미 광고가 표시 중이면 아무 동작도 하지 않음
           if (_isAdShowing) return;
           if (_isInterstitialAdLoaded && _interstitialAd != null) {
@@ -257,7 +260,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
               top: 8,
               right: 20,
               child: Text(
-                '${kScoreLabelKey.tr()}: ${_game.score}',
+                '${kScoreLabelKey.tr()}: ${_game.score.toInt()}',
                 style: const TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
@@ -270,7 +273,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                   color: Colors.black45,
                   child: Text(
                     _game.isGameOver
-                        ? '${kGameOverLabelKey.tr()}\n${kScoreLabelKey.tr()}: ${_game.score}'
+                        ? '${kGameOverLabelKey.tr()}\n${kScoreLabelKey.tr()}: ${_game.score.toInt()}'
                         : '${kInstructionMsgKey.tr()}${_startMessage.isNotEmpty ? "\n\n$_startMessage" : ""}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 16, color: Colors.white),
@@ -311,7 +314,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.white, width: 2),
                       borderRadius: BorderRadius.circular(30),
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                     child: Center(
                       child: Text(

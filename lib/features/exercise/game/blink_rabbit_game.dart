@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flame/components.dart';
 import 'package:flame/input.dart';
 import 'package:flame/collisions.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 
 /// CeilingComponent는 천장을 타일 패턴으로 그리며, 충돌 감지를 위해 Hitbox를 추가합니다.
@@ -81,7 +82,12 @@ class RabbitComponent extends SpriteComponent with CollisionCallbacks, HasGameRe
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    add(RectangleHitbox());
+    final double radius = 0.8 * math.min(size.x, size.y) / 2;
+    add(
+      CircleHitbox()
+        ..radius = radius
+        ..position = Vector2.zero(), // 부모의 중심에 hitbox를 위치시킵니다.
+    );
   }
 
   @override
@@ -185,7 +191,7 @@ class PipeComponent extends PositionComponent with CollisionCallbacks, HasGameRe
 class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection {
   // 상수들 (픽셀 및 상대 좌표)
   static const double kJumpForce = -2.5;
-  static const double kGravity = 0.15;
+  static const double kGravity = 0.125;
   static const double kBarrierWidth = 0.2;
   static const double kBarrierSpeed = 0.2;
   // 가속도를 높여 파이프 속도가 점점 빨라지도록 (예: 0.01)
@@ -229,6 +235,12 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     pipeSprite = Sprite(await images.load('blink_rabbit/pipe.png'));
     rabbitSprite = Sprite(await images.load('blink_rabbit/rabbit.png'));
     tileImage = await images.load('blink_rabbit/tile.png');
+
+    await FlameAudio.audioCache.load('background_music.mp3');
+
+    // 배경음악 초기화 및 재생
+    FlameAudio.bgm.initialize();
+    FlameAudio.bgm.play('background_music.mp3');
 
     // 정적 환경 컴포넌트 추가
     add(SpriteComponent(
@@ -327,11 +339,6 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     // 매 프레임 파이프 속도가 증가하도록 업데이트합니다.
     currentBarrierSpeed += kBarrierAcceleration * dt;
   }
-
-  // @override
-  // void onTapDown(TapDownInfo info) {
-  //   onBlink();
-  // }
 
   /// 토끼의 점프를 유도합니다.
   void onBlink() {
