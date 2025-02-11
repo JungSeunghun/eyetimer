@@ -1,154 +1,126 @@
+import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:flutter/material.dart';
-import 'package:path/path.dart' as path;
+import 'package:rxdart/rxdart.dart';
 
-/// MyAudioHandler는 BaseAudioHandler를 상속받아 just_audio를 통해 백그라운드에서 오디오를 재생합니다.
 class MyAudioHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
-
-  // 현재 로드된 미디어 아이템 캐싱
   MediaItem? _currentMediaItem;
 
+  late final StreamSubscription<PlayerState> _playerStateSubscription;
+  late final StreamSubscription<Duration> _positionSubscription;
+  late final StreamSubscription<Duration> _bufferedPositionSubscription;
+
   MyAudioHandler() {
-    // 플레이어 상태 변화에 따른 playbackState 업데이트
-    _player.playerStateStream.listen((playerState) {
-      final playing = playerState.playing;
-      final processingState = playerState.processingState;
-      AudioProcessingState audioProcessingState;
-      switch (processingState) {
-        case ProcessingState.idle:
-          audioProcessingState = AudioProcessingState.idle;
-          break;
-        case ProcessingState.loading:
-          audioProcessingState = AudioProcessingState.loading;
-          break;
-        case ProcessingState.buffering:
-          audioProcessingState = AudioProcessingState.buffering;
-          break;
-        case ProcessingState.ready:
-          audioProcessingState = AudioProcessingState.ready;
-          break;
-        case ProcessingState.completed:
-          audioProcessingState = AudioProcessingState.completed;
-          break;
-        default:
-          audioProcessingState = AudioProcessingState.idle;
-          break;
-      }
-
-      // 컨트롤 버튼 목록에 rewind와 fastForward 추가
-      final controls = [
-        MediaControl.rewind,
-        playing ? MediaControl.pause : MediaControl.play,
-        MediaControl.fastForward,
-        MediaControl.stop,
-      ];
-
-      final currentState = playbackState.valueOrNull;
-      playbackState.add(
-        (currentState ?? PlaybackState()).copyWith(
-          controls: controls,
-          processingState: audioProcessingState,
-          playing: playing,
-          updatePosition: _player.position,
-          bufferedPosition: _player.bufferedPosition,
-          speed: _player.speed,
-          queueIndex: 0,
-        ),
-      );
+    // 플레이어의 상태, 위치, 버퍼링 위치를 각각 구독하여 playbackState를 업데이트
+    _playerStateSubscription = _player.playerStateStream.listen(_broadcastState);
+    _positionSubscription = _player.positionStream.listen((position) {
+      final currentState = playbackState.value;
+      playbackState.add(currentState.copyWith(updatePosition: position));
     });
-
-    // 재생 위치 스트림을 listen하여 updatePosition과 bufferedPosition을 실시간 업데이트
-    _player.positionStream.listen((position) {
-      final currentState = playbackState.valueOrNull;
-      if (currentState != null) {
-        playbackState.add(
-          currentState.copyWith(
-            updatePosition: position,
-            bufferedPosition: _player.bufferedPosition,
-          ),
-        );
-      }
+    _bufferedPositionSubscription = _player.bufferedPositionStream.listen((bufferedPosition) {
+      final currentState = playbackState.value;
+      playbackState.add(currentState.copyWith(bufferedPosition: bufferedPosition));
     });
   }
 
-  /// MediaItem 업데이트: 미디어 아이템이 변경된 경우에만 자산을 로드하고, 실제 오디오 길이(duration)를 가져옵니다.
-  Future<void> updateMediaItem(MediaItem newMediaItem) async {
-    if (_currentMediaItem?.id == newMediaItem.id) {
-      print("이미 로드된 미디어 아이템입니다.");
-      return;
+  // just_audio의 ProcessingState를 audio_service의 AudioProcessingState로 변환
+  AudioProcessingState _mapProcessingState(ProcessingState state) {
+    switch (state) {
+      case ProcessingState.idle:
+        return AudioProcessingState.idle;
+      case ProcessingState.loading:
+        return AudioProcessingState.loading;
+      case ProcessingState.buffering:
+        return AudioProcessingState.buffering;
+      case ProcessingState.ready:
+        return AudioProcessingState.ready;
+      case ProcessingState.completed:
+        return AudioProcessingState.completed;
+      default:
+        return AudioProcessingState.idle;
     }
-    _currentMediaItem = newMediaItem;
-    Duration? audioDuration;
-    try {
-      // setAudioSource()는 오디오 자산을 로드한 후, 해당 오디오의 전체 길이(duration)를 반환합니다.
-      audioDuration = await _player.setAudioSource(AudioSource.asset(newMediaItem.id));
-    } catch (e) {
-      print("오디오 로드 실패: $e");
-    }
-    final updatedMediaItem = newMediaItem.copyWith(
-      duration: audioDuration ?? Duration.zero,
-    );
-    mediaItem.add(updatedMediaItem);
-    // 반복 재생을 위해 LoopMode.one 설정
-    await _player.setLoopMode(LoopMode.one);
   }
 
-  @override
-  Future<void> play() async {
-    await _player.play();
-  }
+  // 플레이어 상태에 따라 playbackState를 전파
+  void _broadcastState(PlayerState state) {
+    final playing = state.playing;
+    final processingState = state.processingState;
+    final audioProcessingState = _mapProcessingState(processingState);
 
-  @override
-  Future<void> pause() async {
-    await _player.pause();
-  }
-
-  @override
-  Future<void> stop() async {
-    await _player.pause();
-    await _player.seek(Duration.zero);
     playbackState.add(
       PlaybackState(
-        controls: [MediaControl.play, MediaControl.stop],
-        processingState: AudioProcessingState.ready,
-        playing: false,
-        updatePosition: Duration.zero,
-        bufferedPosition: Duration.zero,
-        speed: 1.0,
+        controls: [
+          MediaControl.rewind,
+          playing ? MediaControl.pause : MediaControl.play,
+          MediaControl.fastForward,
+          MediaControl.stop,
+        ],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+        processingState: audioProcessingState,
+        playing: playing,
+        updatePosition: _player.position,
+        bufferedPosition: _player.bufferedPosition,
+        speed: _player.speed,
         queueIndex: 0,
       ),
     );
-    return super.stop();
   }
 
-  // 15초 빠르게 앞으로 이동 (fastForward)
+  @override
+  Future<void> play() => _player.play();
+
+  @override
+  Future<void> pause() => _player.pause();
+
+  @override
+  Future<void> stop() => _player.stop();
+
+  @override
+  Future<void> seek(Duration position) => _player.seek(position);
+
   @override
   Future<void> fastForward() async {
-    final newPosition = _player.position + Duration(seconds: 10);
+    final newPosition = _player.position + const Duration(seconds: 10);
     await _player.seek(newPosition);
   }
 
-  // 15초 뒤로 이동 (rewind)
   @override
   Future<void> rewind() async {
-    var newPosition = _player.position - Duration(seconds: 10);
-    if (newPosition < Duration.zero) newPosition = Duration.zero;
-    await _player.seek(newPosition);
+    final newPosition = _player.position - const Duration(seconds: 10);
+    await _player.seek(newPosition < Duration.zero ? Duration.zero : newPosition);
   }
 
-  @override
-  Future<dynamic> customAction(String name, [dynamic extras]) async {
-    if (name == 'updateMediaItem' && extras is Map<String, dynamic>) {
-      final newMediaItem = MediaItem(
-        id: extras['id'] as String,
-        album: extras['album'] as String? ?? '',
-        title: extras['title'] as String? ?? '',
-        duration: extras['duration'] as Duration?,
-      );
-      await updateMediaItem(newMediaItem);
+  // 새로운 미디어 항목 업데이트
+  Future<void> updateMediaItem(MediaItem newMediaItem) async {
+    if (_currentMediaItem?.id == newMediaItem.id) return;
+    _currentMediaItem = newMediaItem;
+
+    try {
+      // newMediaItem.id가 자산(asset) 경로라고 가정하고 오디오 소스를 설정
+      final duration = await _player.setAudioSource(AudioSource.asset(newMediaItem.id));
+      final updatedItem = newMediaItem.copyWith(duration: duration);
+      mediaItem.add(updatedItem);
+    } catch (e) {
+      print("❗ 오디오 로드 실패: $e");
+      final updatedItem = newMediaItem.copyWith(duration: Duration.zero);
+      mediaItem.add(updatedItem);
     }
-    return null;
+
+    // 반복 재생을 위해 LoopMode.one 설정 (just_audio의 LoopMode.one과 동일)
+    await _player.setLoopMode(LoopMode.one);
+  }
+
+  // 리소스 해제를 위한 dispose 메서드
+  Future<void> dispose() async {
+    await _playerStateSubscription.cancel();
+    await _positionSubscription.cancel();
+    await _bufferedPositionSubscription.cancel();
+    await _player.dispose();
   }
 }

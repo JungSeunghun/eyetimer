@@ -94,8 +94,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
 
-    // 별도의 async 함수 호출하여 MyAudioHandler 초기화
-    _initAudioHandler();
+    // Provider를 통해 미리 생성된 AudioHandler를 가져옵니다.
+    _audioHandler = Provider.of<MyAudioHandler>(context, listen: false);
 
     // 화면이 완전히 렌더링된 후에 스크롤을 맨 아래로 이동
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -115,33 +115,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _initAudioHandler() async {
-    _audioHandler = await AudioService.init(
-      builder: () => MyAudioHandler(),
-      config: AudioServiceConfig(
-        androidNotificationChannelId: 'white_noise_channel',
-        androidNotificationChannelName: 'white_noise_channel_name',
-        androidNotificationChannelDescription: 'white_noise_channel_service',
-        androidNotificationIcon: 'mipmap/launcher_icon',
-        androidNotificationOngoing: true,
-      ),
-    );
-  }
-
   Future<void> _playWhiteNoise() async {
     final prefs = await SharedPreferences.getInstance();
     final asset = prefs.getString('white_noise_asset') ?? '';
     if (asset.isNotEmpty) {
-      // _audioHandler가 아직 초기화되지 않았다면 초기화 대기
-      if (_audioHandler == null) {
-        await _initAudioHandler();
-      }
-      // asset 예: "assets/sounds/rain.mp3"
-      // 파일 이름("rain.mp3")과 확장자를 제거한 이름("rain") 추출
       final fileName = path.basename(asset);
       final baseName = path.basenameWithoutExtension(fileName).toLowerCase();
 
-      // 파일명에 따른 localization 적용
       String localizedTitle;
       switch (baseName) {
         case 'rain':
