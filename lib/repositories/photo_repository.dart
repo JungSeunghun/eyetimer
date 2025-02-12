@@ -7,10 +7,10 @@ class PhotoRepository {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
 
   /// 📌 사진 삽입
-  Future<void> insertPhoto(Photo photo) async {
+  Future<int> insertPhoto(Photo photo) async {
     final db = await _databaseHelper.database;
-    await db.insert(
-      PhotoTable.tableName, // 변경: 테이블명 PhotoTable에서 가져옴
+    return await db.insert(
+      PhotoTable.tableName,
       photo.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );

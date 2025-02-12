@@ -5,12 +5,13 @@ import 'package:flame/game.dart';
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+// import 'package:google_mobile_ads/google_mobile_ads.dart'; // 전면 광고 관련 import 주석처리
 import '../game/blink_rabbit_game.dart';
 import '../services/camera_service.dart';
 import 'package:flutter/foundation.dart'; // for kDebugMode
 import 'package:flutter/widgets.dart'; // PopScope is defined here
 
+/*
 // 플랫폼과 디버그 모드 여부에 따라 전면광고 단위 ID를 반환하는 함수
 String getInterstitialAdUnitId() {
   if (Platform.isAndroid) {
@@ -24,6 +25,7 @@ String getInterstitialAdUnitId() {
   }
   return '';
 }
+*/
 
 class BlinkRabbitScreen extends StatefulWidget {
   const BlinkRabbitScreen({Key? key}) : super(key: key);
@@ -56,10 +58,12 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
   bool _faceDetected = false;
   String _startMessage = "";
 
+  /*
   // 전면광고 관련 필드
   InterstitialAd? _interstitialAd;
   bool _isInterstitialAdLoaded = false;
   bool _isAdShowing = false; // 광고 표시 중인지를 나타내는 플래그
+  */
 
   @override
   void initState() {
@@ -77,7 +81,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
       };
 
     // 초기화 시점에 전면광고 로드
-    _loadInterstitialAd();
+    // _loadInterstitialAd();
 
     // 얼굴 인식 관련 카메라 서비스 설정
     _cameraService = CameraService(
@@ -108,6 +112,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
     });
   }
 
+  /*
   // 전면광고 로드 함수 (initState 및 게임 오버 시 호출)
   void _loadInterstitialAd() {
     InterstitialAd.load(
@@ -132,12 +137,13 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
       ),
     );
   }
+  */
 
   @override
   void dispose() {
     _cameraService.dispose();
     _countdownTimer?.cancel();
-    _interstitialAd?.dispose();
+    // _interstitialAd?.dispose();
     super.dispose();
   }
 
@@ -216,7 +222,8 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
         Future.microtask(() async {
           FlameAudio.bgm.stop();
           FlameAudio.bgm.dispose();
-          // 이미 광고가 표시 중이면 아무 동작도 하지 않음
+          /*
+          // 전면광고 관련 부분 주석처리
           if (_isAdShowing) return;
           if (_isInterstitialAdLoaded && _interstitialAd != null) {
             _isAdShowing = true;
@@ -241,6 +248,11 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop(); // 광고가 없으면 바로 pop
             }
+          }
+          */
+          // 광고 관련 부분 주석처리 후 기본 pop 동작
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
           }
         });
       },
@@ -338,7 +350,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.white, width: 2),
                       borderRadius: BorderRadius.circular(30),
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                     child: Center(
                       child: Text(

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/neumorphicButton.dart';
+
 class ControlButtons extends StatelessWidget {
   final bool isRunning;
   final bool isPaused;
-  final VoidCallback onPlay; // 시작
-  final VoidCallback onPause; // 일시 정지
-  final VoidCallback onStop; // 중지
+  final VoidCallback onPlay;   // 시작
+  final VoidCallback onPause;  // 일시 정지
+  final VoidCallback onStop;   // 중지
   final VoidCallback onTakePhoto; // 사진 찍기
 
   const ControlButtons({
@@ -28,15 +30,10 @@ class ControlButtons extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // 중지 버튼
-        ElevatedButton(
+        NeumorphicButton(
           onPressed: onStop,
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            backgroundColor: backgroundColor,
-            foregroundColor: textColor,
-            shape: const CircleBorder(),
-            padding: const EdgeInsets.all(8),
-          ),
+          size: 56,
+          backgroundColor: backgroundColor,
           child: Icon(
             Icons.refresh_rounded,
             size: 32,
@@ -45,33 +42,24 @@ class ControlButtons extends StatelessWidget {
         ),
         const SizedBox(width: 36),
         // 시작 / 일시 정지 버튼
-        ElevatedButton(
+        NeumorphicButton(
           onPressed: isRunning ? (isPaused ? onPlay : onPause) : onPlay,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF242424),
-            foregroundColor: Color(0xFFF8F8F8),
-            shape: const CircleBorder(),
-            padding: const EdgeInsets.all(8),
-          ),
+          size: 72,
+          backgroundColor: primaryColor,
           child: Icon(
             isRunning
                 ? (isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded)
                 : Icons.play_arrow_rounded,
             size: 36,
-            color: primaryColor,
+            color: backgroundColor,
           ),
         ),
         const SizedBox(width: 40),
         // 사진 찍기 버튼
-        ElevatedButton(
+        NeumorphicButton(
           onPressed: onTakePhoto,
-          style: ElevatedButton.styleFrom(
-            elevation: 0,
-            backgroundColor: backgroundColor,
-            foregroundColor: textColor,
-            shape: const CircleBorder(),
-            padding: const EdgeInsets.all(8),
-          ),
+          size: 56,
+          backgroundColor: backgroundColor,
           child: Icon(
             Icons.photo_camera_outlined,
             size: 32,

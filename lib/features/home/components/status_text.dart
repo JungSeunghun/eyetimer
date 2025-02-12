@@ -23,9 +23,9 @@ class StatusText extends StatelessWidget {
       isRunning ? (isFocusMode ? focusModeText : breakModeText) : beforeStartText,
       textAlign: TextAlign.center,
       style: TextStyle(
-        fontSize: 14,
+        height: 1.6,
+        fontSize: 16,
         fontWeight: FontWeight.w300,
-        height: 0.8,
         color: textColor,
       ),
     );

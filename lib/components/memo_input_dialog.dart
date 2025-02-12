@@ -145,7 +145,7 @@ class _MemoInputScreenState extends State<MemoInputScreen> {
                 enabledBorder: UnderlineInputBorder(
                   borderSide: BorderSide(color: textColor),
                 ),
-                hintStyle: TextStyle(color: textColor.withOpacity(0.7)),
+                hintStyle: TextStyle(color: textColor.withValues(alpha: 0.7)),
               ),
             ),
             const SizedBox(height: 16),

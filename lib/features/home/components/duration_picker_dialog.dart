@@ -7,11 +7,11 @@ class DurationPickerDialog extends StatefulWidget {
   final Function(Duration, Duration) onSave;
 
   const DurationPickerDialog({
-    super.key,
+    Key? key,
     required this.focusDuration,
     required this.breakDuration,
     required this.onSave,
-  });
+  }) : super(key: key);
 
   @override
   _DurationPickerDialogState createState() => _DurationPickerDialogState();
@@ -23,6 +23,11 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
   late int breakMinutes;
   late int breakSeconds;
 
+  late TextEditingController _focusMinutesController;
+  late TextEditingController _focusSecondsController;
+  late TextEditingController _breakMinutesController;
+  late TextEditingController _breakSecondsController;
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +35,24 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
     focusSeconds = widget.focusDuration.inSeconds % 60;
     breakMinutes = widget.breakDuration.inMinutes;
     breakSeconds = widget.breakDuration.inSeconds % 60;
+
+    _focusMinutesController =
+        TextEditingController(text: focusMinutes.toString());
+    _focusSecondsController =
+        TextEditingController(text: focusSeconds.toString());
+    _breakMinutesController =
+        TextEditingController(text: breakMinutes.toString());
+    _breakSecondsController =
+        TextEditingController(text: breakSeconds.toString());
+  }
+
+  @override
+  void dispose() {
+    _focusMinutesController.dispose();
+    _focusSecondsController.dispose();
+    _breakMinutesController.dispose();
+    _breakSecondsController.dispose();
+    super.dispose();
   }
 
   @override
@@ -51,6 +74,8 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             label: 'focus_time_label'.tr(),
             minutes: focusMinutes,
             seconds: focusSeconds,
+            minutesController: _focusMinutesController,
+            secondsController: _focusSecondsController,
             onMinutesChanged: (value) => setState(() => focusMinutes = value),
             onSecondsChanged: (value) => setState(() => focusSeconds = value),
             textColor: textColor,
@@ -60,6 +85,8 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             label: 'break_time_label'.tr(),
             minutes: breakMinutes,
             seconds: breakSeconds,
+            minutesController: _breakMinutesController,
+            secondsController: _breakSecondsController,
             onMinutesChanged: (value) => setState(() => breakMinutes = value),
             onSecondsChanged: (value) => setState(() => breakSeconds = value),
             textColor: textColor,
@@ -95,6 +122,8 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
     required String label,
     required int minutes,
     required int seconds,
+    required TextEditingController minutesController,
+    required TextEditingController secondsController,
     required Function(int) onMinutesChanged,
     required Function(int) onSecondsChanged,
     required Color textColor,
@@ -103,7 +132,8 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+          style:
+          TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
         ),
         const SizedBox(height: 8),
         // 분 입력 Row
@@ -113,51 +143,53 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             IconButton(
               icon: Icon(Icons.remove, color: textColor),
               onPressed: () {
-                if (minutes > 1) onMinutesChanged(minutes - 1);
+                if (minutes > 1) {
+                  int newVal = minutes - 1;
+                  onMinutesChanged(newVal);
+                  minutesController.text = newVal.toString();
+                }
               },
               splashRadius: 20,
             ),
             SizedBox(
               width: 80,
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  textSelectionTheme: TextSelectionThemeData(
-                    cursorColor: textColor,
-                    selectionColor: textColor.withOpacity(0.5),
-                    selectionHandleColor: textColor,
+              child: TextFormField(
+                controller: minutesController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, color: textColor),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: UnderlineInputBorder(
+                    borderSide: BorderSide(color: textColor),
                   ),
-                ),
-                child: TextFormField(
-                  initialValue: minutes.toString(),
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, color: textColor),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    border: UnderlineInputBorder(
-                      borderSide: BorderSide(color: textColor),
-                    ),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: textColor),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: textColor),
-                    ),
-                    suffixText: ' ${'minute'.tr()}',
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: textColor),
                   ),
-                  onFieldSubmitted: (value) {
-                    final newVal = int.tryParse(value);
-                    if (newVal != null) onMinutesChanged(newVal);
-                  },
-                  cursorColor: textColor,
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: textColor),
+                  ),
+                  suffixText: ' ${'minute'.tr()}',
                 ),
+                onFieldSubmitted: (value) {
+                  final newVal = int.tryParse(value);
+                  if (newVal != null) {
+                    onMinutesChanged(newVal);
+                    minutesController.text = newVal.toString();
+                  }
+                },
+                cursorColor: textColor,
               ),
             ),
             IconButton(
               icon: Icon(Icons.add, color: textColor),
               onPressed: () {
-                if (minutes < 60) onMinutesChanged(minutes + 1);
+                if (minutes < 60) {
+                  int newVal = minutes + 1;
+                  onMinutesChanged(newVal);
+                  minutesController.text = newVal.toString();
+                }
               },
               splashRadius: 20,
             ),
@@ -170,51 +202,54 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
             IconButton(
               icon: Icon(Icons.remove, color: textColor),
               onPressed: () {
-                if (seconds > 0) onSecondsChanged(seconds - 10);
+                if (seconds > 0) {
+                  int newVal = seconds - 10;
+                  if (newVal < 0) newVal = 0;
+                  onSecondsChanged(newVal);
+                  secondsController.text = newVal.toString();
+                }
               },
               splashRadius: 20,
             ),
             SizedBox(
               width: 80,
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  textSelectionTheme: TextSelectionThemeData(
-                    cursorColor: textColor,
-                    selectionColor: textColor.withOpacity(0.5),
-                    selectionHandleColor: textColor,
+              child: TextFormField(
+                controller: secondsController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, color: textColor),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: UnderlineInputBorder(
+                    borderSide: BorderSide(color: textColor),
                   ),
-                ),
-                child: TextFormField(
-                  initialValue: seconds.toString(),
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, color: textColor),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                    border: UnderlineInputBorder(
-                      borderSide: BorderSide(color: textColor),
-                    ),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: textColor),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: textColor),
-                    ),
-                    suffixText: ' ${'second'.tr()}',
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: textColor),
                   ),
-                  onFieldSubmitted: (value) {
-                    final newVal = int.tryParse(value);
-                    if (newVal != null) onSecondsChanged(newVal);
-                  },
-                  cursorColor: textColor,
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: textColor),
+                  ),
+                  suffixText: ' ${'second'.tr()}',
                 ),
+                onFieldSubmitted: (value) {
+                  final newVal = int.tryParse(value);
+                  if (newVal != null) {
+                    onSecondsChanged(newVal);
+                    secondsController.text = newVal.toString();
+                  }
+                },
+                cursorColor: textColor,
               ),
             ),
             IconButton(
               icon: Icon(Icons.add, color: textColor),
               onPressed: () {
-                if (seconds < 50) onSecondsChanged(seconds + 10);
+                if (seconds < 50) {
+                  int newVal = seconds + 10;
+                  onSecondsChanged(newVal);
+                  secondsController.text = newVal.toString();
+                }
               },
               splashRadius: 20,
             ),

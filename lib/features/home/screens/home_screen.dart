@@ -228,6 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final File tempFile = File(photo.path);
         await tempFile.copy(newPath);
 
+        // MemoInputScreen을 열어 memo 값을 받음
         final memo = await Navigator.push<String?>(
           context,
           MaterialPageRoute(
@@ -236,13 +237,18 @@ class _HomeScreenState extends State<HomeScreen> {
         );
 
         final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
+
+        // PhotoService.savePhoto가 새로 저장된 사진의 id를 반환하도록 수정합니다.
+        final int newId = await _photoService.savePhoto(newPath, timestamp, memo);
+
+        // newId를 받아 Photo 객체를 생성합니다.
         final newPhoto = Photo(
-          id: null,
+          id: newId,  // null이 아니라 새로 생성된 id 할당
           filePath: newPath,
           timestamp: timestamp,
           memo: memo,
         );
-        await _photoService.savePhoto(newPath, timestamp, memo);
+
         photoProvider.addPhoto(newPhoto);
         await photoProvider.loadAllPhotos();
       }
@@ -250,6 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("Error saving photo: $e");
     }
   }
+
 
   String _getNotificationMessage(Duration duration, {required bool isFocusMode}) {
     final minutes = duration.inMinutes.toString();
@@ -380,80 +387,92 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: SingleChildScrollView(
-        controller: _scrollController, // ScrollController 적용
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              PhotoSlider(
-                todayPhotos: photoProvider.todayPhotos,
-                pageController: _pageController,
-                noPhotosMessage: 'no_photos_message'.tr(),
-                textColor: textColor,
-                onEditMemo: (Photo photo, String updatedMemo) {
-                  photoProvider.updatePhotoMemo(photo.id!, updatedMemo);
-                  photoProvider.loadTodayPhotos();
-                },
-                onDeletePhoto: (Photo photo) {
-                  photoProvider.deletePhoto(photo.id!);
-                  photoProvider.loadTodayPhotos();
-                },
-              ),
-              const SizedBox(height: 24.0),
-              TimerDisplay(
-                currentDuration: currentDuration,
-                textColor: textColor,
-                onSettingsPressed: () => showDialog(
-                  context: context,
-                  builder: (context) => DurationPickerDialog(
-                    focusDuration: focusDuration,
-                    breakDuration: breakDuration,
-                    onSave: (newFocusDuration, newBreakDuration) {
-                      setState(() {
-                        focusDuration = newFocusDuration;
-                        breakDuration = newBreakDuration;
-                        currentDuration = focusDuration;
-                        isFocusMode = true; // 기본 집중모드로 재설정
-                      });
-                      _saveDurations();
-                    },
+        controller: _scrollController,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // PhotoSlider와 TimerDisplay를 Stack으로 겹쳐서 배치
+            Stack(
+              children: [
+                PhotoSlider(
+                  todayPhotos: photoProvider.todayPhotos,
+                  pageController: _pageController,
+                  textColor: textColor,
+                  onEditMemo: (Photo photo, String updatedMemo) {
+                    photoProvider.updatePhotoMemo(photo.id!, updatedMemo);
+                    photoProvider.loadTodayPhotos();
+                  },
+                  onDeletePhoto: (Photo photo) {
+                    photoProvider.deletePhoto(photo.id!);
+                    photoProvider.loadTodayPhotos();
+                  },
+                ),
+                // Positioned.fill으로 전체 영역을 채우고 Center로 TimerDisplay를 중앙에 배치
+                Positioned.fill(
+                  child: Center(
+                    child: TimerDisplay(
+                      currentDuration: currentDuration,
+                      focusDuration: focusDuration,
+                      breakDuration: breakDuration,
+                      isFocusMode: isFocusMode, // 집중 모드 여부에 따라 maxDuration이 자동 선택됨
+                    )
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 32.0),
+            StatusText(
+              isRunning: isTimerRunning,
+              isFocusMode: isFocusMode,
+              focusModeText: focusModeText,
+              breakModeText: breakModeText,
+              beforeStartText: 'before_start_text'.tr(),
+              textColor: textColor,
+            ),
+            const SizedBox(height: 32.0),
+            ControlButtons(
+              isRunning: isTimerRunning,
+              isPaused: isPaused,
+              onPlay: () {
+                if (isTimerRunning && isPaused) {
+                  _resumeTimer();
+                } else {
+                  _startTimer();
+                }
+              },
+              onPause: _pauseTimer,
+              onStop: _stopTimerNotification,
+              onTakePhoto: takePhoto,
+            ),
+            // 컨트롤 버튼 아래에 설정 버튼 추가
+            const SizedBox(height: 24.0),
+            IconButton(
+              icon: Icon(Icons.settings, color: textColor, size: 32.0),
+              onPressed: () => showDialog(
+                context: context,
+                builder: (context) => DurationPickerDialog(
+                  focusDuration: focusDuration,
+                  breakDuration: breakDuration,
+                  onSave: (newFocusDuration, newBreakDuration) {
+                    setState(() {
+                      focusDuration = newFocusDuration;
+                      breakDuration = newBreakDuration;
+                      currentDuration = focusDuration;
+                      isFocusMode = true; // 집중 모드로 재설정
+                    });
+                    _saveDurations();
+                  },
+                ),
               ),
-              const SizedBox(height: 16.0),
-              StatusText(
-                isRunning: isTimerRunning,
-                isFocusMode: isFocusMode,
-                focusModeText: focusModeText,
-                breakModeText: breakModeText,
-                beforeStartText: 'before_start_text'.tr(),
-                textColor: textColor,
-              ),
-              const SizedBox(height: 32.0),
-              ControlButtons(
-                isRunning: isTimerRunning,
-                isPaused: isPaused,
-                onPlay: () {
-                  if (isTimerRunning && isPaused) {
-                    _resumeTimer();
-                  } else {
-                    _startTimer();
-                  }
-                },
-                onPause: _pauseTimer,
-                onStop: _stopTimerNotification,
-                onTakePhoto: takePhoto,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-      bottomNavigationBar: SizedBox(
-        height: AdSize.banner.height.toDouble(),
-        child: const GoogleBannerAdWidget(),
-      ),
+      // bottomNavigationBar: SizedBox(
+      //   height: AdSize.banner.height.toDouble(),
+      //   child: const GoogleBannerAdWidget(),
+      // ),
     );
   }
 }

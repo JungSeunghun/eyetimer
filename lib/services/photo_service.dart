@@ -5,9 +5,10 @@ class PhotoService {
   final PhotoRepository _photoRepository = PhotoRepository();
 
   // 사진 저장 (메모 포함)
-  Future<void> savePhoto(String filePath, String timestamp, String? memo) async {
+  Future<int> savePhoto(String filePath, String timestamp, String? memo) async {
     final photo = Photo(filePath: filePath, timestamp: timestamp, memo: memo);
-    await _photoRepository.insertPhoto(photo);
+    final int newId = await _photoRepository.insertPhoto(photo);
+    return newId;
   }
 
   Future<List<Photo>> getAllPhotos() async {
