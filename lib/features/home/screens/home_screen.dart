@@ -370,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 전환된 모드의 제목과 메시지를 생성하여 네이티브에 업데이트 명령을 전달합니다.
           String title = isFocusMode ? focus_title : break_title;
           String message = _getNotificationMessage(
-              focusDuration,
+              isFocusMode ? focusDuration : breakDuration,
               isFocusMode: isFocusMode
           );
           TimerNotification.switchTimer(title, message);

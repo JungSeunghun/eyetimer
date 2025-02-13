@@ -173,12 +173,14 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
                   suffixText: ' ${'minute'.tr()}',
                 ),
                 onFieldSubmitted: (value) {
-                  final newVal = int.tryParse(value);
-                  if (newVal != null) {
-                    onMinutesChanged(newVal);
-                    minutesController.text = newVal.toString();
+                  int newVal = int.tryParse(value) ?? 1;
+                  if (newVal < 1) {
+                    newVal = 1;
                   }
+                  onMinutesChanged(newVal);
+                  minutesController.text = newVal.toString();
                 },
+
                 cursorColor: textColor,
               ),
             ),
@@ -233,11 +235,12 @@ class _DurationPickerDialogState extends State<DurationPickerDialog> {
                   suffixText: ' ${'second'.tr()}',
                 ),
                 onFieldSubmitted: (value) {
-                  final newVal = int.tryParse(value);
-                  if (newVal != null) {
-                    onSecondsChanged(newVal);
-                    secondsController.text = newVal.toString();
+                  int newVal = int.tryParse(value) ?? 1;
+                  if (newVal < 1) {
+                    newVal = 1;
                   }
+                  onMinutesChanged(newVal);
+                  minutesController.text = newVal.toString();
                 },
                 cursorColor: textColor,
               ),
