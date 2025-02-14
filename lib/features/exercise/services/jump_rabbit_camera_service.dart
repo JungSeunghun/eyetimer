@@ -39,17 +39,13 @@ Uint8List convertYUV420toNV21Isolate(Map<String, dynamic> data) {
 }
 
 class CameraService {
-  static const double kEyeOpenThreshold = 0.25;
+  static const double kEyeOpenThreshold = 0.1;
   static const int kBlinkCooldownMs = 150;
-  static const int kFaceDetectionIntervalMs = 150;
 
   cam.CameraController? _cameraController;
   bool isCameraInitialized = false;
   bool _isDetecting = false;
   late final FaceDetector _faceDetector;
-
-  DateTime _lastBlinkTime = DateTime.now();
-  DateTime _lastFaceDetectionTime = DateTime.now();
 
   cam.CameraController? get cameraController => _cameraController;
 
@@ -87,9 +83,6 @@ class CameraService {
       isCameraInitialized = true;
       await _cameraController!.startImageStream((cam.CameraImage image) {
         final now = DateTime.now();
-        // 얼굴 검출 호출 주기 제한
-        if (now.difference(_lastFaceDetectionTime).inMilliseconds < kFaceDetectionIntervalMs) return;
-        _lastFaceDetectionTime = now;
 
         if (_isDetecting) return;
         _isDetecting = true;
@@ -194,19 +187,20 @@ class CameraService {
     }
   }
 
-  /// 얼굴 인식 후 깜빡임 체크 (UI나 게임에 전달)
-  void checkBlinking(List<Face> faces, void Function() onBlink) {
+  void checkBlinking(List<Face> faces, void Function() onBlinkLeft, void Function() onBlinkRight) {
     if (faces.isEmpty) return;
     final face = faces.first;
     final leftProb = face.leftEyeOpenProbability ?? 1.0;
     final rightProb = face.rightEyeOpenProbability ?? 1.0;
     final now = DateTime.now();
-    final timeDiff = now.difference(_lastBlinkTime).inMilliseconds;
-    if (leftProb < kEyeOpenThreshold &&
-        rightProb < kEyeOpenThreshold &&
-        timeDiff > kBlinkCooldownMs) {
-      _lastBlinkTime = now;
-      onBlink();
+
+    // 왼쪽 눈만 깜빡인 경우
+    if (leftProb < kEyeOpenThreshold) {
+      onBlinkLeft();
+    }
+    // 오른쪽 눈만 깜빡인 경우
+    else if (rightProb < kEyeOpenThreshold) {
+      onBlinkRight();
     }
   }
 

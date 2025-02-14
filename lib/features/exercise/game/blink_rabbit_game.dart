@@ -72,6 +72,7 @@ class FloorComponent extends PositionComponent with HasGameRef<BlinkRabbitGame>,
 // 충돌 발생 시 gameRef.endGame()을 호출합니다.
 class RabbitComponent extends SpriteComponent with CollisionCallbacks, HasGameRef<BlinkRabbitGame> {
   double velocity = 0.0;
+  bool _canJump = true; // 점프 가능 여부
 
   RabbitComponent({
     required Sprite sprite,
@@ -109,7 +110,13 @@ class RabbitComponent extends SpriteComponent with CollisionCallbacks, HasGameRe
   }
 
   void jump() {
+    if (!_canJump) return; // 쿨다운 중이면 점프 무시
+    _canJump = false;
     velocity = BlinkRabbitGame.kJumpForce;
+    // 0.1초 후에 점프 가능 상태로 전환
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _canJump = true;
+    });
   }
 }
 
@@ -186,12 +193,12 @@ class PipeComponent extends PositionComponent with CollisionCallbacks, HasGameRe
   }
 }
 
-/// BlinkRabbitGame은 전체 게임을 관리하며, HasCollisionDetection을 믹스인하여
-/// Flame의 충돌 시스템을 활성화합니다.
 class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection {
-  // 상수들 (픽셀 및 상대 좌표)
+  final String selectedCharacterAsset;
+  BlinkRabbitGame({required this.selectedCharacterAsset});
+
   static const double kJumpForce = -2.5;
-  static const double kGravity = 0.125;
+  static const double kGravity = 0.1;
   static const double kBarrierWidth = 0.2;
   static const double kBarrierSpeed = 0.2;
   // 가속도를 높여 파이프 속도가 점점 빨라지도록 (예: 0.01)
@@ -220,11 +227,8 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
   late RabbitComponent rabbit;
 
   final math.Random _random = math.Random();
-
-  // 오브젝트 풀: 파이프 재사용을 위한 리스트
   final List<PipeComponent> _pipePool = [];
 
-  // 외부(UI)에서 설정 가능한 콜백들
   VoidCallback? onScoreChanged;
   VoidCallback? onGameOver;
 
@@ -233,12 +237,10 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     await super.onLoad();
     backgroundSprite = Sprite(await images.load('blink_rabbit/background.png'));
     pipeSprite = Sprite(await images.load('blink_rabbit/pipe.png'));
-    rabbitSprite = Sprite(await images.load('blink_rabbit/rabbit.png'));
+    rabbitSprite = Sprite(await images.load(selectedCharacterAsset));
     tileImage = await images.load('blink_rabbit/tile.png');
 
-    await FlameAudio.audioCache.load('background_music.mp3');
-
-    // 배경음악 초기화 및 재생
+    await FlameAudio.audioCache.loadAll(['background_music.mp3', 'jump_sound.mp3']);
     FlameAudio.bgm.initialize();
     FlameAudio.bgm.play('background_music.mp3');
 
@@ -258,7 +260,7 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
       size: Vector2(size.x, kCeilingFloorHeight),
       position: Vector2(0, size.y - kCeilingFloorHeight),
     )..priority = 2);
-    // 토끼 컴포넌트 추가 (게임 시작 전에도 표시)
+
     rabbit = RabbitComponent(
       sprite: rabbitSprite,
       position: Vector2(size.x * kRabbitXCenter, size.y * 0.5),
@@ -351,5 +353,12 @@ class BlinkRabbitGame extends FlameGame with TapDetector, HasCollisionDetection 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       onGameOver?.call();
     });
+  }
+
+  @override
+  void onDetach() {
+    // 게임 종료 시 배경음악 중지 및 해제
+    FlameAudio.bgm.stop();
+    super.onDetach();
   }
 }

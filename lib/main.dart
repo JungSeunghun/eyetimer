@@ -2,12 +2,17 @@ import 'package:EyeTimer/providers/photo_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 import 'audio_player_task.dart';
 import 'providers/dark_mode_notifier.dart';
 import 'eye_timer_app.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +21,20 @@ Future<void> main() async {
   final darkModeNotifier = DarkModeNotifier();
   await darkModeNotifier.initialize();
   MobileAds.instance.initialize();
+
+  tz.initializeTimeZones();
+
+  AndroidInitializationSettings android =
+  const AndroidInitializationSettings("@mipmap/launcher_icon");
+  DarwinInitializationSettings ios = const DarwinInitializationSettings(
+    requestSoundPermission: true,
+    requestBadgePermission: true,
+    requestAlertPermission: true,
+  );
+
+  InitializationSettings settings =
+  InitializationSettings(android: android, iOS: ios);
+  await flutterLocalNotificationsPlugin.initialize(settings);
 
   // AudioService를 초기화하여 MyAudioHandler 인스턴스를 생성합니다.
   final audioHandler = await AudioService.init(

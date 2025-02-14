@@ -1,37 +1,31 @@
-// lib/screens/blink_rabbit_screen.dart
 import 'dart:async';
-import 'dart:io';
 import 'package:flame/game.dart';
-import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import '../game/blink_rabbit_game.dart';
-import '../services/blink_rabbit_camera_service.dart';
-import 'package:flutter/foundation.dart'; // for kDebugMode
-import 'package:flutter/widgets.dart'; // PopScope is defined here
+import '../game/jump_rabbit_game.dart';
+import '../services/jump_rabbit_camera_service.dart';
 
-class BlinkRabbitScreen extends StatefulWidget {
+class JumpRabbitScreen extends StatefulWidget {
   final String selectedCharacterAsset;
-  const BlinkRabbitScreen({Key? key, required this.selectedCharacterAsset}) : super(key: key);
+  const JumpRabbitScreen({Key? key, required this.selectedCharacterAsset}) : super(key: key);
 
   @override
-  State<BlinkRabbitScreen> createState() => _BlinkRabbitScreenState();
+  State<JumpRabbitScreen> createState() => _JumpRabbitScreenState();
 }
 
-class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
+class _JumpRabbitScreenState extends State<JumpRabbitScreen> {
   // 번역 키 (translation keys)
-  static const String kAppBarTitleKey = "blink_game_appbar_title";
+  static const String kAppBarTitleKey = "jump_game_appbar_title";
   static const String kScoreLabelKey = "score_label";
   static const String kGameOverLabelKey = "game_over_label";
   static const String kInstructionMsgKey = "instruction_msg";
   static const String kStartButtonLabelKey = "start_button_label";
   static const String kRetryButtonLabelKey = "retry_button_label";
-
   static const String kFaceRecognizingMsgKey = "face_recognizing_msg";
   static const String kFaceRecognizedMsgKey = "face_recognized_msg";
   static const String kFaceNotDetectedMsgKey = "face_not_detected_msg";
 
-  late BlinkRabbitGame _game;
+  late JumpRabbitGame _game;
   late CameraService _cameraService;
 
   bool _isStartingCountdown = false;
@@ -47,17 +41,22 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
     super.initState();
 
     // 게임 객체 생성 및 콜백 설정
-    _game = BlinkRabbitGame(selectedCharacterAsset: widget.selectedCharacterAsset)
+    _game = JumpRabbitGame(selectedCharacterAsset: widget.selectedCharacterAsset)
       ..onScoreChanged = () {
-        if (!mounted) return;
-        setState(() {});
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {});
+        });
       }
       ..onGameOver = () {
-        if (!mounted) return;
-        setState(() {});
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {});
+        });
       };
 
-    // 얼굴 인식 관련 카메라 서비스 설정
+
+    // 얼굴 인식 관련 카메라 서비스 설정 (깜빡임 시 왼쪽/오른쪽 이동 호출)
     _cameraService = CameraService(
       onFacesDetected: (faces) {
         if (!mounted) return;
@@ -72,8 +71,12 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
             _faceDetected = false;
           });
         }
-        // 깜빡임 체크 후 게임에 전달
-        _cameraService.checkBlinking(faces, _game.onBlink);
+        // 얼굴 깜빡임 체크 후 토끼의 좌우 이동 호출
+        _cameraService.checkBlinking(
+          faces,
+              () => _game.rabbit.moveLeft(),
+              () => _game.rabbit.moveRight(),
+        );
       },
     );
 
@@ -126,17 +129,22 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
         _isStartingCountdown = true;
         _countdown = 3;
       });
+      // 카운트다운 시작
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         if (!mounted) {
           timer.cancel();
           return;
         }
-        setState(() => _countdown--);
+        setState(() {
+          _countdown--;
+        });
         if (_countdown == 0) {
           timer.cancel();
           _game.startGame();
           if (mounted) {
-            setState(() => _isStartingCountdown = false);
+            setState(() {
+              _isStartingCountdown = false;
+            });
           }
         }
       });
@@ -170,9 +178,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
       body: Stack(
         children: [
           // Flame Game 위젯
-          Positioned.fill(
-            child: GameWidget(game: _game),
-          ),
+          Positioned.fill(child: GameWidget(game: _game)),
           // 점수 오버레이
           Positioned(
             top: 8,
@@ -182,7 +188,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
               style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),
-          // 안내, 게임 오버, 얼굴 인식 메시지 (중앙보다 위쪽에 배치)
+          // 안내 메시지 (게임 시작 전)
           if (!_game.isGameStarted && !_isStartingCountdown)
             Align(
               alignment: const Alignment(0, -0.3),
@@ -217,7 +223,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                 ),
               ),
             ),
-          // 게임 시작 버튼 (게임이 시작되지 않고, 카운트다운 중이 아닐 때)
+          // 게임 시작 버튼 (게임 시작 전)
           if (!_game.isGameStarted &&
               !_isStartingCountdown &&
               !_game.isGameOver)
@@ -232,7 +238,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white, width: 2),
                     borderRadius: BorderRadius.circular(30),
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                   ),
                   child: Center(
                     child: Text(
@@ -256,7 +262,7 @@ class _BlinkRabbitScreenState extends State<BlinkRabbitScreen> {
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.white, width: 2),
                     borderRadius: BorderRadius.circular(30),
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: Colors.white.withOpacity(0.1),
                   ),
                   child: Center(
                     child: Text(

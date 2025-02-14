@@ -45,8 +45,8 @@
   "delete_confirm_content": "Are you sure you want to delete?",
   "enter_memo_hint": "Enter your memo",
 
-  "__comment6__": "Blink Rabbit Game Screen texts",
-  "blink_rabbit_appbar_title": "Blink Rabbit",
+  "__comment6__": "Blink Game Screen texts",
+  "blink_game_appbar_title": "Blink Blink",
   "score_label": "Score",
   "game_over_label": "Game Over!",
   "instruction_msg": "Blink your eyes to control!",
@@ -73,5 +73,20 @@
   "focus_time": "Focus Time",
   "break_time": "Break Time",
   "focus_started": "Focus time started.",
-  "break_started": "Break time started."
+  "break_started": "Break time started.",
+
+  "__comment10__": "Jump Game Screen Text",
+  "jump_game_appbar_title": "jump jump",
+
+  "character": {
+    "rabbit": "Rabbit",
+    "cat": "Cat",
+    "dog": "Dog"
+  },
+
+  "__comment11__": "Alarm related texts",
+  "alarm_options_title": "Alarm Management",
+  "alarm_set": "Set Alarm",
+  "alarm_cancelled": "Alarm has been cancelled.",
+  "alarm_cancel": "Cancel Alarm"
 }

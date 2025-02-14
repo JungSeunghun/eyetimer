@@ -47,8 +47,8 @@
   "delete_confirm_content": "정말로 삭제하시겠습니까?",
   "enter_memo_hint": "메모를 입력하세요.",
 
-  "__comment6__": "깜빡깜빡 토끼 게임 화면 텍스트",
-  "blink_rabbit_appbar_title": "깜빡깜빡 토끼",
+  "__comment6__": "깜빡깜빡 게임 화면 텍스트",
+  "blink_game_appbar_title": "깜빡 깜빡",
   "score_label": "점수",
   "game_over_label": "게임 오버!",
   "instruction_msg": "눈을 깜빡여 조종하세요!",
@@ -75,5 +75,20 @@
   "focus_time": "집중 시간",
   "break_time": "휴식 시간",
   "focus_started": "집중 시간이 시작되었습니다.",
-  "break_started": "휴식 시간이 시작되었습니다."
+  "break_started": "휴식 시간이 시작되었습니다.",
+
+  "__comment10__": "Jump Game Screen Text",
+  "jump_game_appbar_title": "점프 점프",
+
+  "character": {
+    "rabbit": "토끼",
+    "cat": "고양이",
+    "dog": "강아지"
+  },
+
+  "__comment11__": "알람 관련 텍스트",
+  "alarm_options_title": "알람 관리",
+  "alarm_set": "알람 설정",
+  "alarm_cancelled": "알람이 해제되었습니다.",
+  "alarm_cancel": "알람 해제"
 }

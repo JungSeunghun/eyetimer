@@ -47,8 +47,8 @@ dependencies:
   flutter_launcher_icons: ^0.14.3
   camera: ^0.11.1
   google_mlkit_face_detection: ^0.12.0
-  flame: ^1.23.0
-  flame_audio: ^2.10.8
+  flame: ^1.25.0
+  flame_audio: ^2.11.0
   flutter_foreground_task: ^8.17.0
   just_audio: ^0.9.46
   audio_service: ^0.18.17
@@ -81,7 +81,9 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/character/
     - assets/images/blink_rabbit/
+    - assets/images/jump_rabbit/
     - assets/fonts/
     - assets/logos/
     - assets/sounds/
