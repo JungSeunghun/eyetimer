@@ -451,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 "timer_setting".tr(),
                 style: TextStyle(
-                  color: textColor,
+                  color: textColor.withValues(alpha: 0.7),
                 ),
               ),
               onPressed: () => showDialog(
