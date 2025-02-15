@@ -32,8 +32,7 @@ Future<void> main() async {
     requestAlertPermission: true,
   );
 
-  InitializationSettings settings =
-  InitializationSettings(android: android, iOS: ios);
+  InitializationSettings settings = InitializationSettings(android: android, iOS: ios);
   await flutterLocalNotificationsPlugin.initialize(settings);
 
   // AudioService를 초기화하여 MyAudioHandler 인스턴스를 생성합니다.

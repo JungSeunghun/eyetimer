@@ -2,9 +2,21 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'components/alarm_dialog.dart';
 import 'constants/colors.dart';
 import 'providers/dark_mode_notifier.dart';
 import 'layouts/main_layout.dart';
+
+Future<void> initializeDefaultAlarms(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  final defaultsInitialized = prefs.getBool('defaults_initialized') ?? false;
+  if (!defaultsInitialized) {
+    await scheduleNotification(TimeOfDay(hour: 10, minute: 0), context);
+    await scheduleNotification(TimeOfDay(hour: 20, minute: 0), context);
+    await prefs.setBool('defaults_initialized', true);
+  }
+}
 
 class EyeTimerApp extends StatefulWidget {
   @override
@@ -20,6 +32,10 @@ class _EyeTimerAppState extends State<EyeTimerApp>
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      initializeDefaultAlarms(context);
+    });
 
     // 애니메이션 컨트롤러 초기화
     _controller = AnimationController(

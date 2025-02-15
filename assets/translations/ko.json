@@ -88,7 +88,11 @@
 
   "__comment11__": "알람 관련 텍스트",
   "alarm_options_title": "알람 관리",
-  "alarm_set": "알람 설정",
+  "alarm_set": "알람 추가",
   "alarm_cancelled": "알람이 해제되었습니다.",
-  "alarm_cancel": "알람 해제"
+  "alarm_cancel": "알람 해제",
+  "notification_title": "Eye Timer",
+  "notification_content": "오늘 하늘 한 번 바라보셨나요? 그 한 순간이 눈과 마음을 치유해줄 거예요.",
+  "notification_set": "노티피케이션이 {time}에 설정되었습니다.",
+  "alarm_empty": "설정된 알람이 없습니다."
 }

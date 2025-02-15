@@ -86,7 +86,11 @@
 
   "__comment11__": "Alarm related texts",
   "alarm_options_title": "Alarm Management",
-  "alarm_set": "Set Alarm",
+  "alarm_set": "Add Alarm",
   "alarm_cancelled": "Alarm has been cancelled.",
-  "alarm_cancel": "Cancel Alarm"
+  "alarm_cancel": "Cancel Alarm",
+  "notification_title": "Eye Timer",
+  "notification_content": "Have you looked up at the sky today? That moment might gently heal your eyes and heart.",
+  "notification_set": "Notification is set at {time}.",
+  "alarm_empty": "No alarms are set."
 }
