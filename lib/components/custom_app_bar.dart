@@ -46,8 +46,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     final label = option['label']!;
                     final isSelected = selected == asset;
                     return CheckboxListTile(
-                      activeColor: textColor,
-                      checkColor: primaryColor,
+                      activeColor: primaryColor,
+                      checkColor: backgroundColor,
                       title: Text(label, style: TextStyle(color: textColor)),
                       value: isSelected,
                       onChanged: (bool? value) {

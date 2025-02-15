@@ -69,7 +69,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderSide: BorderSide(color: textColor),
                   ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true, signed: true),
                 style: TextStyle(color: textColor),
               ),
               const SizedBox(height: 10),
@@ -90,7 +91,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                const TextInputType.numberWithOptions(
+                    decimal: true, signed: true,
+                ),
                 style: TextStyle(color: textColor),
               ),
             ],
@@ -123,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () => Navigator.pop(context, true),
                           child: Text(
                             'delete'.tr(),
-                            style: TextStyle(color: Colors.red),
+                            style: const TextStyle(color: Colors.red),
                           ),
                         ),
                       ],
@@ -190,103 +193,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: backgroundColor,
         ),
       ),
-      body: Padding(
+      body: _visionList.isEmpty
+          ? Center(
+        child: Text(
+          'profile.no_record'.tr(),
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16, color: textColor),
+        ),
+      )
+          : Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
+            // VisionGraph를 ListView의 첫 항목으로 넣음
             VisionGraph(
               visionList: _visionList,
               textColor: textColor,
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: _visionList.isEmpty
-                  ? Center(
-                child: Text(
-                  'profile.no_record'.tr(),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: textColor),
-                ),
-              )
-                  : ListView.separated(
-                itemCount: _visionList.length,
-                separatorBuilder: (context, index) =>
-                const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final reversedList = _visionList.reversed.toList();
-                  final vision = reversedList[index];
-                  return GestureDetector(
-                    onTap: () => _showVisionDialog(vision: vision),
-                    child: Card(
-                      color: backgroundColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(color: textColor.withOpacity(0.2)),
-                      ),
-                      elevation: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              vision.date,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color: textColor,
+            ListView.separated(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: _visionList.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final reversedList = _visionList.reversed.toList();
+                final vision = reversedList[index];
+                return GestureDetector(
+                  onTap: () => _showVisionDialog(vision: vision),
+                  child: Card(
+                    color: backgroundColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: textColor.withOpacity(0.2)),
+                    ),
+                    elevation: 3,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            vision.date,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Column(
+                                children: [
+                                  Text(
+                                    'profile.left_eye'.tr(),
+                                    style: TextStyle(fontSize: 14, color: textColor),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    vision.leftEyeVision.toString(),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Column(
-                                  children: [
-                                    Text(
-                                      'profile.left_eye'.tr(),
-                                      style: TextStyle(
-                                          fontSize: 14, color: textColor),
+                              Column(
+                                children: [
+                                  Text(
+                                    'profile.right_eye'.tr(),
+                                    style: TextStyle(fontSize: 14, color: textColor),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    vision.rightEyeVision.toString(),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      vision.leftEyeVision.toString(),
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: textColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  children: [
-                                    Text(
-                                      'profile.right_eye'.tr(),
-                                      style: TextStyle(
-                                          fontSize: 14, color: textColor),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      vision.rightEyeVision.toString(),
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: textColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
