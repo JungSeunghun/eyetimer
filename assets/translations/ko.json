@@ -18,6 +18,7 @@
   "white_noise_ocean": "파도 소리",
   "white_noise_wind": "바람 소리",
   "white_noise_default": "백색소음",
+  "timer_setting": "설정",
 
   "__comment2__": "시간 설정 다이얼로그 텍스트",
   "dialog_title": "시간 설정",

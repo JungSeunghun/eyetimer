@@ -235,14 +235,19 @@ Future<void> showAlarmDialog(BuildContext context) async {
                         return ListTile(
                           leading: CircleAvatar(
                             backgroundColor: theme.primaryColor,
-                            child: const Icon(Icons.alarm,
-                                color: Colors.white, size: 20),
+                            child: Icon(
+                              Icons.alarm,
+                              color: Color(0xFFF8F7F5),
+                              size: 20,
+                            ),
                           ),
                           title: Text(
                             alarm['time'],
                             style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.w500),
+                              color: textColor,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 24,
+                            ),
                           ),
                           // 리스트 아이템을 탭하면 수정 모달이 뜹니다.
                           onTap: () async {

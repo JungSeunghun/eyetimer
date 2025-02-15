@@ -447,8 +447,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             // 컨트롤 버튼 아래에 설정 버튼 추가
             const SizedBox(height: 24.0),
-            IconButton(
-              icon: Icon(Icons.settings, color: textColor, size: 32.0),
+            TextButton(
+              child: Text(
+                "timer_setting".tr(),
+                style: TextStyle(
+                  color: textColor,
+                ),
+              ),
               onPressed: () => showDialog(
                 context: context,
                 builder: (context) => DurationPickerDialog(

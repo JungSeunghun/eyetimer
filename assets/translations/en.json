@@ -16,6 +16,7 @@
   "white_noise_ocean": "Ocean sound",
   "white_noise_wind": "Wind sound",
   "white_noise_default": "White noise",
+  "timer_setting": "setting",
 
   "__comment2__": "Duration Picker Dialog texts",
   "dialog_title": "Time Settings",
