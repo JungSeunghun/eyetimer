@@ -113,6 +113,7 @@ class RabbitComponent extends SpriteComponent with CollisionCallbacks, HasGameRe
     if (!_canJump) return; // 쿨다운 중이면 점프 무시
     _canJump = false;
     velocity = BlinkRabbitGame.kJumpForce;
+    FlameAudio.play('jump_sound.mp3'); // 점프 사운드 재생
     // 0.1초 후에 점프 가능 상태로 전환
     Future.delayed(const Duration(milliseconds: 100), () {
       _canJump = true;
