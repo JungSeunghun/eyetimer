@@ -192,14 +192,13 @@ class CameraService {
     final face = faces.first;
     final leftProb = face.leftEyeOpenProbability ?? 1.0;
     final rightProb = face.rightEyeOpenProbability ?? 1.0;
-    final now = DateTime.now();
 
-    // 왼쪽 눈만 깜빡인 경우
-    if (leftProb < kEyeOpenThreshold) {
+    // 왼쪽 눈만 깜빡인 경우 (왼쪽 눈이 threshold 이하이고, 오른쪽 눈은 threshold 이상인 경우)
+    if (leftProb < kEyeOpenThreshold && rightProb >= kEyeOpenThreshold) {
       onBlinkLeft();
     }
-    // 오른쪽 눈만 깜빡인 경우
-    else if (rightProb < kEyeOpenThreshold) {
+    // 오른쪽 눈만 깜빡인 경우 (오른쪽 눈이 threshold 이하이고, 왼쪽 눈은 threshold 이상인 경우)
+    else if (rightProb < kEyeOpenThreshold && leftProb >= kEyeOpenThreshold) {
       onBlinkRight();
     }
   }

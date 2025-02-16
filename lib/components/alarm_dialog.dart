@@ -5,6 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:uuid/uuid.dart';
 import '../main.dart';
 
 // Cupertino용 시간 선택 다이얼로그
@@ -93,8 +94,10 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
     scheduledTime = scheduledTime.add(const Duration(days: 1));
   }
   final tz.TZDateTime tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
-  // 고유 알람 id 생성 (예: 현재 밀리초 값의 나머지)
-  final int alarmId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
+
+  // uuid를 이용해 고유 id를 문자열로 생성하고, 알림 등록 시에는 hashCode를 사용
+  final String alarmId = Uuid().v4();
+  final int notificationId = alarmId.hashCode;
 
   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
     'vision_care_channel',
@@ -109,7 +112,7 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
   );
 
   await flutterLocalNotificationsPlugin.zonedSchedule(
-    alarmId,
+    notificationId,
     'notification_title'.tr(),
     'notification_content'.tr(),
     tzScheduledTime,
@@ -121,7 +124,7 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
 
   final String timeString = "${selectedTime.hour}:${selectedTime.minute.toString().padLeft(2, '0')}";
   final alarms = await getStoredAlarms();
-  alarms.add({"id": alarmId, "time": timeString});
+  alarms.add({"id": notificationId, "time": timeString});
   await saveStoredAlarms(alarms);
 }
 
@@ -241,13 +244,25 @@ Future<void> showAlarmDialog(BuildContext context) async {
                               size: 20,
                             ),
                           ),
-                          title: Text(
-                            alarm['time'],
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 24,
-                            ),
+                          title: Builder(
+                            builder: (_) {
+                              // 저장된 시간 문자열 "HH:mm"을 분리하여 int로 변환
+                              final parts = alarm['time'].split(':');
+                              final hour = int.parse(parts[0]);
+                              final minute = int.parse(parts[1]);
+                              // DateTime 객체로 변환 (날짜는 임의로 0년 1월 1일로 설정)
+                              final time = DateTime(0, 1, 1, hour, minute);
+                              // 오전/오후 형식으로 포맷 (예: "오전 9:30")
+                              final formattedTime = DateFormat('a h:mm', 'ko').format(time);
+                              return Text(
+                                formattedTime,
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 24,
+                                ),
+                              );
+                            },
                           ),
                           // 리스트 아이템을 탭하면 수정 모달이 뜹니다.
                           onTap: () async {
@@ -269,21 +284,29 @@ Future<void> showAlarmDialog(BuildContext context) async {
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    title: Text("delete_confirm_title".tr()),
-                                    content:
-                                    Text("delete_confirm_content?".tr()),
+                                    backgroundColor: backgroundColor, // 다이얼로그 배경색 적용
+                                    title: Text(
+                                      "delete_confirm_title".tr(),
+                                      style: TextStyle(color: textColor), // 타이틀 텍스트 색상 적용
+                                    ),
+                                    content: Text(
+                                      "delete_confirm_content".tr(),
+                                      style: TextStyle(color: textColor), // 내용 텍스트 색상 적용
+                                    ),
                                     actions: [
                                       TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(context)
-                                                .pop(false),
-                                        child: Text("cancel".tr()),
+                                        onPressed: () => Navigator.of(context).pop(false),
+                                        child: Text(
+                                          "cancel".tr(),
+                                          style: TextStyle(color: textColor), // 취소 버튼 텍스트 색상 적용
+                                        ),
                                       ),
                                       TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(context)
-                                                .pop(true),
-                                        child: Text("delete".tr()),
+                                        onPressed: () => Navigator.of(context).pop(true),
+                                        child: Text(
+                                          "delete".tr(),
+                                          style: TextStyle(color: Colors.red), // 삭제 버튼은 빨간색 유지
+                                        ),
                                       ),
                                     ],
                                   );
