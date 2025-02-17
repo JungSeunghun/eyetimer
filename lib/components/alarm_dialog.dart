@@ -5,8 +5,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:uuid/uuid.dart';
 import '../main.dart';
+
+// 고유 ID를 생성하기 위한 함수 (SharedPreferences에 저장된 카운터 값을 증가시킴)
+Future<int> getNextAlarmId() async {
+  final prefs = await SharedPreferences.getInstance();
+  int id = prefs.getInt('alarm_counter') ?? 0;
+  await prefs.setInt('alarm_counter', id + 1);
+  return id;
+}
 
 // Cupertino용 시간 선택 다이얼로그
 Future<TimeOfDay?> showCupertinoTimePickerDialog(BuildContext context, {required TimeOfDay initialTime}) async {
@@ -22,13 +29,11 @@ Future<TimeOfDay?> showCupertinoTimePickerDialog(BuildContext context, {required
       DateTime tempPickedDateTime = initialDateTime;
       return Container(
         height: 300,
-        // Container의 배경색을 테마 색상으로 지정
         color: backgroundColor,
         child: CupertinoTheme(
           data: CupertinoThemeData(
             scaffoldBackgroundColor: backgroundColor,
             textTheme: CupertinoTextThemeData(
-              // CupertinoDatePicker에 적용할 텍스트 스타일 설정
               dateTimePickerTextStyle: TextStyle(color: textColor, fontSize: 20),
             ),
           ),
@@ -46,7 +51,6 @@ Future<TimeOfDay?> showCupertinoTimePickerDialog(BuildContext context, {required
                 ),
               ),
               CupertinoButton(
-                // 버튼 텍스트에도 색상 적용
                 child: Text("save".tr(), style: TextStyle(color: textColor)),
                 onPressed: () {
                   pickedTime = TimeOfDay(hour: tempPickedDateTime.hour, minute: tempPickedDateTime.minute);
@@ -95,9 +99,8 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
   }
   final tz.TZDateTime tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
-  // uuid를 이용해 고유 id를 문자열로 생성하고, 알림 등록 시에는 hashCode를 사용
-  final String alarmId = Uuid().v4();
-  final int notificationId = alarmId.hashCode;
+  // SharedPreferences 카운터를 이용해 고유 정수 ID 생성
+  final int notificationId = await getNextAlarmId();
 
   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
     'vision_care_channel',
@@ -166,7 +169,6 @@ Future<void> editAlarm(int alarmId, String currentTime, BuildContext context) as
       priority: Priority.high,
       ticker: 'ticker',
     );
-
     const NotificationDetails notificationDetails = NotificationDetails(
       android: androidDetails,
     );
@@ -210,7 +212,6 @@ Future<void> showAlarmDialog(BuildContext context) async {
     builder: (context) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setState) {
-          // UI를 업데이트할 때마다 alarms 변수도 최신 상태로 유지하도록 함
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -219,15 +220,13 @@ Future<void> showAlarmDialog(BuildContext context) async {
                 children: [
                   Text(
                     "alarm_options_title".tr(),
-                    style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
                   ),
                   const SizedBox(height: 16),
                   Expanded(
                     child: alarms.isEmpty
                         ? Center(
-                        child: Text("alarm_empty".tr(),
-                            style: TextStyle(color: textColor)))
+                        child: Text("alarm_empty".tr(), style: TextStyle(color: textColor)))
                         : ListView.separated(
                       shrinkWrap: true,
                       itemCount: alarms.length,
@@ -240,19 +239,16 @@ Future<void> showAlarmDialog(BuildContext context) async {
                             backgroundColor: theme.primaryColor,
                             child: Icon(
                               Icons.alarm,
-                              color: Color(0xFFF8F7F5),
+                              color: const Color(0xFFF8F7F5),
                               size: 20,
                             ),
                           ),
                           title: Builder(
                             builder: (_) {
-                              // 저장된 시간 문자열 "HH:mm"을 분리하여 int로 변환
                               final parts = alarm['time'].split(':');
                               final hour = int.parse(parts[0]);
                               final minute = int.parse(parts[1]);
-                              // DateTime 객체로 변환 (날짜는 임의로 0년 1월 1일로 설정)
                               final time = DateTime(0, 1, 1, hour, minute);
-                              // 오전/오후 형식으로 포맷 (예: "오전 9:30")
                               final formattedTime = DateFormat('a h:mm', 'ko').format(time);
                               return Text(
                                 formattedTime,
@@ -264,49 +260,34 @@ Future<void> showAlarmDialog(BuildContext context) async {
                               );
                             },
                           ),
-                          // 리스트 아이템을 탭하면 수정 모달이 뜹니다.
                           onTap: () async {
                             await editAlarm(alarm['id'], alarm['time'], context);
-                            // 수정 후 최신 데이터로 업데이트
                             alarms = await getStoredAlarms();
                             setState(() {});
                           },
                           trailing: TextButton(
                             child: Text(
                               "delete".tr(),
-                              style: TextStyle(
-                                color: Colors.red,
-                              ),
+                              style: const TextStyle(color: Colors.red),
                             ),
                             onPressed: () async {
-                              // 삭제 전 확인 다이얼로그 표시
                               final shouldDelete = await showDialog<bool>(
                                 context: context,
                                 builder: (BuildContext context) {
                                   return AlertDialog(
-                                    backgroundColor: backgroundColor, // 다이얼로그 배경색 적용
-                                    title: Text(
-                                      "delete_confirm_title".tr(),
-                                      style: TextStyle(color: textColor), // 타이틀 텍스트 색상 적용
-                                    ),
-                                    content: Text(
-                                      "delete_confirm_content".tr(),
-                                      style: TextStyle(color: textColor), // 내용 텍스트 색상 적용
-                                    ),
+                                    backgroundColor: backgroundColor,
+                                    title: Text("delete_confirm_title".tr(),
+                                        style: TextStyle(color: textColor)),
+                                    content: Text("delete_confirm_content".tr(),
+                                        style: TextStyle(color: textColor)),
                                     actions: [
                                       TextButton(
                                         onPressed: () => Navigator.of(context).pop(false),
-                                        child: Text(
-                                          "cancel".tr(),
-                                          style: TextStyle(color: textColor), // 취소 버튼 텍스트 색상 적용
-                                        ),
+                                        child: Text("cancel".tr(), style: TextStyle(color: textColor)),
                                       ),
                                       TextButton(
                                         onPressed: () => Navigator.of(context).pop(true),
-                                        child: Text(
-                                          "delete".tr(),
-                                          style: TextStyle(color: Colors.red), // 삭제 버튼은 빨간색 유지
-                                        ),
+                                        child: Text("delete".tr(), style: TextStyle(color: Colors.red)),
                                       ),
                                     ],
                                   );
@@ -314,7 +295,6 @@ Future<void> showAlarmDialog(BuildContext context) async {
                               );
                               if (shouldDelete == true) {
                                 await cancelAlarm(alarm['id'], context);
-                                // 삭제 후 최신 데이터로 업데이트
                                 alarms = await getStoredAlarms();
                                 setState(() {});
                               }
@@ -327,28 +307,23 @@ Future<void> showAlarmDialog(BuildContext context) async {
                   const SizedBox(height: 16),
                   ElevatedButton.icon(
                     onPressed: () async {
-                      // Cupertino 시간 선택 다이얼로그 호출 후 알람 추가
                       final TimeOfDay? picked = await showCupertinoTimePickerDialog(
                         context,
                         initialTime: TimeOfDay.now(),
                       );
                       if (picked != null) {
                         await scheduleNotification(picked, context);
-                        // 알람 추가 후 최신 데이터로 업데이트
                         alarms = await getStoredAlarms();
                         setState(() {});
                       }
                     },
-                    icon: Icon(
-                      Icons.add,
-                      color: textColor,
-                    ),
+                    icon: Icon(Icons.add, color: textColor),
                     label: Text("alarm_set".tr()),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 48),
                       backgroundColor: backgroundColor,
                       foregroundColor: textColor,
-                      side: BorderSide(color: textColor)
+                      side: BorderSide(color: textColor),
                     ),
                   ),
                   TextButton(
