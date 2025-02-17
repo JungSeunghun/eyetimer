@@ -6,7 +6,6 @@ import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -14,7 +13,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path/path.dart' as path;
 
 import '../../../audio_player_task.dart';
-import '../../../components/google_banner_ad_widget.dart';
 import '../../../timer_notification.dart'; // 네이티브 호출용 클래스
 import '../components/control_buttons.dart';
 import '../components/duration_picker_dialog.dart';

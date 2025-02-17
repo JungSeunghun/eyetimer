@@ -121,7 +121,7 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
     tzScheduledTime,
     notificationDetails,
     uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     matchDateTimeComponents: DateTimeComponents.time,
   );
 
