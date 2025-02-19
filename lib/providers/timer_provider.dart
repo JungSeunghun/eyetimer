@@ -152,29 +152,25 @@ class TimerProvider extends ChangeNotifier {
     isTimerRunning = true;
     isPaused = false;
     notifyListeners();
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (isTimerRunning && !isPaused) {
         if (currentDuration.inSeconds > 0) {
           currentDuration -= const Duration(seconds: 1);
-          _updateTimerNotification();
+          final title = isFocusMode ? 'focus_title'.tr() : 'break_title'.tr();
+          final message = _getNotificationMessage(currentDuration, isFocusMode: isFocusMode);
+          Future.microtask(() => TimerNotification.updateTimer(title, message));
         } else {
           // 모드 전환
           isFocusMode = !isFocusMode;
           currentDuration = isFocusMode ? focusDuration : breakDuration;
           final title = isFocusMode ? 'focus_title'.tr() : 'break_title'.tr();
           final message = _getNotificationMessage(currentDuration, isFocusMode: isFocusMode);
-          TimerNotification.switchTimer(title, message);
+          Future.microtask(() => TimerNotification.switchTimer(title, message));
         }
         notifyListeners();
       }
     });
-  }
-
-  void _updateTimerNotification() {
-    if (!isTimerRunning || isPaused) return;
-    final title = isFocusMode ? 'focus_title'.tr() : 'break_title'.tr();
-    final message = _getNotificationMessage(currentDuration, isFocusMode: isFocusMode);
-    Future.microtask(() => TimerNotification.updateTimer(title, message));
   }
 
   void pauseTimer() {
