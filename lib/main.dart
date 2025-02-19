@@ -1,4 +1,5 @@
 import 'package:EyeTimer/providers/photo_provider.dart';
+import 'package:EyeTimer/providers/timer_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -35,13 +36,12 @@ Future<void> main() async {
   InitializationSettings settings = InitializationSettings(android: android, iOS: ios);
   await flutterLocalNotificationsPlugin.initialize(settings);
 
-  // AudioService를 초기화하여 MyAudioHandler 인스턴스를 생성합니다.
   final audioHandler = await AudioService.init(
     builder: () => MyAudioHandler(),
     config: AudioServiceConfig(
       androidNotificationChannelId: 'white_noise_channel',
-      androidNotificationChannelName: 'white_noise_channel_name',
-      androidNotificationChannelDescription: 'white_noise_channel_service',
+      androidNotificationChannelName: 'White Noise',
+      androidNotificationChannelDescription: 'White noise playback service',
       androidNotificationIcon: 'mipmap/launcher_icon',
       androidNotificationOngoing: true,
     ),
@@ -56,6 +56,11 @@ Future<void> main() async {
         providers: [
           ChangeNotifierProvider(create: (_) => darkModeNotifier),
           ChangeNotifierProvider(create: (_) => PhotoProvider()),
+          ChangeNotifierProvider(create: (_) {
+            final timerProvider = TimerProvider();
+            timerProvider.setAudioHandler(audioHandler);
+            return timerProvider;
+          }),
           // AudioHandler를 전역으로 사용하기 위해 Provider에 등록합니다.
           Provider<MyAudioHandler>.value(value: audioHandler),
         ],

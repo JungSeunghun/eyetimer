@@ -93,5 +93,11 @@
   "notification_title": "Eye Timer",
   "notification_content": "Have you looked up at the sky today? That moment might gently heal your eyes and heart.",
   "notification_set": "Notification is set at {time}.",
-  "alarm_empty": "No alarms are set."
+  "alarm_empty": "No alarms are set.",
+
+  "__comment11__": "Exit Dialog",
+  "exit_dialog_title": "Exit App",
+  "exit_dialog_content": "Do you really want to exit?",
+  "exit_dialog_cancel": "No",
+  "exit_dialog_confirm": "Yes"
 }

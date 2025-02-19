@@ -22,14 +22,17 @@ class PhotoSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.width,
-      child: todayPhotos.isEmpty
-          ? _buildEmptyState()
-          : _buildPhotoSlider(context),
+    return RepaintBoundary(
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width,
+        child: todayPhotos.isEmpty
+            ? _buildEmptyState()
+            : _buildPhotoSlider(context),
+      ),
     );
   }
+
 
   Widget _buildEmptyState() {
     return ClipRRect(
@@ -121,15 +124,15 @@ class PhotoItem extends StatelessWidget {
         gaplessPlayback: true,
         fit: BoxFit.cover,
         filterQuality: FilterQuality.low,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded) return child;
-          return AnimatedOpacity(
-            child: child,
-            opacity: frame == null ? 0 : 1,
-            duration: const Duration(seconds: 1),
-            curve: Curves.easeOut,
-          );
-        },
+        // frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        //   if (wasSynchronouslyLoaded) return child;
+        //   return AnimatedOpacity(
+        //     child: child,
+        //     opacity: frame == null ? 0 : 1,
+        //     duration: const Duration(seconds: 1),
+        //     curve: Curves.easeOut,
+        //   );
+        // },
       ),
     );
   }
