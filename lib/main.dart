@@ -1,6 +1,6 @@
 import 'package:EyeTimer/providers/photo_provider.dart';
 import 'package:EyeTimer/providers/timer_provider.dart';
-import 'package:audio_service/audio_service.dart';
+import 'package:EyeTimer/timer_notification.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -8,12 +8,14 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
-import 'audio_player_task.dart';
 import 'providers/dark_mode_notifier.dart';
 import 'eye_timer_app.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
+
+// 전역 TimerProvider 인스턴스 생성
+final TimerProvider timerProvider = TimerProvider();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,16 +38,15 @@ Future<void> main() async {
   InitializationSettings settings = InitializationSettings(android: android, iOS: ios);
   await flutterLocalNotificationsPlugin.initialize(settings);
 
-  final audioHandler = await AudioService.init(
-    builder: () => MyAudioHandler(),
-    config: AudioServiceConfig(
-      androidNotificationChannelId: 'white_noise_channel',
-      androidNotificationChannelName: 'White Noise',
-      androidNotificationChannelDescription: 'White noise playback service',
-      androidNotificationIcon: 'mipmap/launcher_icon',
-      androidNotificationOngoing: true,
-    ),
-  );
+  TimerNotification.channel.setMethodCallHandler((call) async {
+    if (call.method == "onPauseNotification") {
+      print("Received onPauseNotification from native");
+      timerProvider.pauseTimer();
+    } else if (call.method == "onResumeNotification") {
+      print("Received onResumeNotification from native");
+      timerProvider.resumeTimer();
+    }
+  });
 
   runApp(
     EasyLocalization(
@@ -56,13 +57,7 @@ Future<void> main() async {
         providers: [
           ChangeNotifierProvider(create: (_) => darkModeNotifier),
           ChangeNotifierProvider(create: (_) => PhotoProvider()),
-          ChangeNotifierProvider(create: (_) {
-            final timerProvider = TimerProvider();
-            timerProvider.setAudioHandler(audioHandler);
-            return timerProvider;
-          }),
-          // AudioHandler를 전역으로 사용하기 위해 Provider에 등록합니다.
-          Provider<MyAudioHandler>.value(value: audioHandler),
+          ChangeNotifierProvider<TimerProvider>.value(value: timerProvider),
         ],
         child: EyeTimerApp(),
       ),

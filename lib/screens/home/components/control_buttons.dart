@@ -37,7 +37,7 @@ class ControlButtons extends StatelessWidget {
           child: Icon(
             Icons.refresh_rounded,
             size: 32,
-            color: textColor,
+            color: textColor.withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(width: 36),
@@ -63,7 +63,7 @@ class ControlButtons extends StatelessWidget {
           child: Icon(
             Icons.photo_camera_outlined,
             size: 32,
-            color: textColor,
+            color: textColor.withValues(alpha: 0.7),
           ),
         ),
       ],
