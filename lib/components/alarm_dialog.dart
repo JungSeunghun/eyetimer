@@ -99,6 +99,14 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
   }
   final tz.TZDateTime tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
+  final String timeString = "${selectedTime.hour}:${selectedTime.minute.toString().padLeft(2, '0')}";
+
+  // 동일한 시간의 알림이 이미 저장되어 있는지 확인
+  final alarms = await getStoredAlarms();
+  if (alarms.any((alarm) => alarm["time"] == timeString)) {
+    return; // 동일 시간의 알림이 있으면 등록하지 않고 바로 return
+  }
+
   // SharedPreferences 카운터를 이용해 고유 정수 ID 생성
   final int notificationId = await getNextAlarmId();
 
@@ -121,15 +129,15 @@ Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) 
     tzScheduledTime,
     notificationDetails,
     uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
-    androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     matchDateTimeComponents: DateTimeComponents.time,
   );
 
-  final String timeString = "${selectedTime.hour}:${selectedTime.minute.toString().padLeft(2, '0')}";
-  final alarms = await getStoredAlarms();
+  // 알림 추가 후 저장된 알람 목록에 추가
   alarms.add({"id": notificationId, "time": timeString});
   await saveStoredAlarms(alarms);
 }
+
 
 // 알람 취소 (개별 삭제)
 Future<void> cancelAlarm(int alarmId, BuildContext context) async {
@@ -199,6 +207,16 @@ Future<void> editAlarm(int alarmId, String currentTime, BuildContext context) as
 Future<void> showAlarmDialog(BuildContext context) async {
   // 최초에 alarms를 불러옵니다.
   List<Map<String, dynamic>> alarms = await getStoredAlarms();
+
+  // 알람 목록을 시간순으로 정렬 (오전부터 오후 순)
+  alarms.sort((a, b) {
+    final aParts = a["time"].split(":");
+    final bParts = b["time"].split(":");
+    final aMinutes = int.parse(aParts[0]) * 60 + int.parse(aParts[1]);
+    final bMinutes = int.parse(bParts[0]) * 60 + int.parse(bParts[1]);
+    return aMinutes.compareTo(bMinutes);
+  });
+
   final theme = Theme.of(context);
   final backgroundColor = theme.scaffoldBackgroundColor;
   final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
@@ -263,6 +281,14 @@ Future<void> showAlarmDialog(BuildContext context) async {
                           onTap: () async {
                             await editAlarm(alarm['id'], alarm['time'], context);
                             alarms = await getStoredAlarms();
+                            // 알람 목록 정렬 후 setState 호출
+                            alarms.sort((a, b) {
+                              final aParts = a["time"].split(":");
+                              final bParts = b["time"].split(":");
+                              final aMinutes = int.parse(aParts[0]) * 60 + int.parse(aParts[1]);
+                              final bMinutes = int.parse(bParts[0]) * 60 + int.parse(bParts[1]);
+                              return aMinutes.compareTo(bMinutes);
+                            });
                             setState(() {});
                           },
                           trailing: TextButton(
@@ -296,6 +322,14 @@ Future<void> showAlarmDialog(BuildContext context) async {
                               if (shouldDelete == true) {
                                 await cancelAlarm(alarm['id'], context);
                                 alarms = await getStoredAlarms();
+                                // 알람 목록 정렬 후 setState 호출
+                                alarms.sort((a, b) {
+                                  final aParts = a["time"].split(":");
+                                  final bParts = b["time"].split(":");
+                                  final aMinutes = int.parse(aParts[0]) * 60 + int.parse(aParts[1]);
+                                  final bMinutes = int.parse(bParts[0]) * 60 + int.parse(bParts[1]);
+                                  return aMinutes.compareTo(bMinutes);
+                                });
                                 setState(() {});
                               }
                             },
@@ -314,6 +348,14 @@ Future<void> showAlarmDialog(BuildContext context) async {
                       if (picked != null) {
                         await scheduleNotification(picked, context);
                         alarms = await getStoredAlarms();
+                        // 알람 목록 정렬 후 setState 호출
+                        alarms.sort((a, b) {
+                          final aParts = a["time"].split(":");
+                          final bParts = b["time"].split(":");
+                          final aMinutes = int.parse(aParts[0]) * 60 + int.parse(aParts[1]);
+                          final bMinutes = int.parse(bParts[0]) * 60 + int.parse(bParts[1]);
+                          return aMinutes.compareTo(bMinutes);
+                        });
                         setState(() {});
                       }
                     },

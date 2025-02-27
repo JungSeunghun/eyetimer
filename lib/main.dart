@@ -35,8 +35,15 @@ Future<void> main() async {
     requestAlertPermission: true,
   );
 
-  InitializationSettings settings = InitializationSettings(android: android, iOS: ios);
+  InitializationSettings settings =
+  InitializationSettings(android: android, iOS: ios);
   await flutterLocalNotificationsPlugin.initialize(settings);
+
+  // 알림 권한 요청 코드 추가
+  flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
 
   TimerNotification.channel.setMethodCallHandler((call) async {
     if (call.method == "onPauseNotification") {

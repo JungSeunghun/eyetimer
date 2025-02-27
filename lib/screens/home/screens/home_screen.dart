@@ -40,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textColor = theme.textTheme.bodyMedium?.color ?? Colors.black;
-    final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
 
     return Scaffold(
       body: SingleChildScrollView(
