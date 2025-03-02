@@ -86,8 +86,9 @@ Future<void> saveStoredAlarms(List<Map<String, dynamic>> alarms) async {
 
 // 알람 등록 (새 알람 추가)
 Future<void> scheduleNotification(TimeOfDay selectedTime, BuildContext context) async {
-  final now = DateTime.now();
-  DateTime scheduledTime = DateTime(
+  final now = tz.TZDateTime.now(tz.local);
+  tz.TZDateTime scheduledTime = tz.TZDateTime(
+    tz.local,
     now.year,
     now.month,
     now.day,
@@ -156,8 +157,9 @@ Future<void> editAlarm(int alarmId, String currentTime, BuildContext context) as
   final TimeOfDay? picked = await showCupertinoTimePickerDialog(context, initialTime: initialTime);
   if (picked != null) {
     await flutterLocalNotificationsPlugin.cancel(alarmId);
-    final now = DateTime.now();
-    DateTime scheduledTime = DateTime(
+    final now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledTime = tz.TZDateTime(
+      tz.local,
       now.year,
       now.month,
       now.day,
